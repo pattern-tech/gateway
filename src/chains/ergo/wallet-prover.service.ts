@@ -51,7 +51,6 @@ export class WalletProver implements Prover {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   signInput(tx: UnsignedErgoTx, input: number): Promise<TxInput> {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
     return;
   }
 }

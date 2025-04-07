@@ -1,4 +1,4 @@
-import { AvailableNetworks } from '../../../services/config-manager-types';
+import { AvailableNetworks } from "../../connector.requests";
 
 export interface NetworkConfig {
   allowedSlippage: string;

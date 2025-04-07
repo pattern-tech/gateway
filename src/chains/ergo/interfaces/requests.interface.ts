@@ -1,7 +1,7 @@
 import { AssetAmount, ErgoTx } from '@patternglobal/ergo-sdk';
 import { NetworkSelectionRequest } from '../../../services/common-interfaces';
 import { ErgoAsset, ErgoBoxAsset } from './ergo.interface';
-
+import { PollResponse as PR} from '../../chain.requests';
 export interface PoolRequest {
   network: string;
   poolId: string;
@@ -16,7 +16,7 @@ export interface PoolResponse {
   feeDenom: bigint;
 }
 
-export interface PollResponse extends ErgoTx {
+export interface PollResponse extends ErgoTx, PR {
   currentBlock: number;
   txBlock: number | null;
   txHash: string;
