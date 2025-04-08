@@ -1,8 +1,8 @@
 import { SpectrumConfig } from './spectrum.config';
 import { Ergo } from '../../chains/ergo/ergo';
 import { ErgoAsset } from '../../chains/ergo/interfaces/ergo.interface';
+import { PriceRequest, TradeRequest } from '../connector.requests';
 import { BigNumber } from 'bignumber.js';
-import { PriceRequest, TradeRequest } from '../../amm/amm.requests';
 
 export class Spectrum {
   private static _instances: { [name: string]: Spectrum };

@@ -7,7 +7,11 @@ import {
   Validator,
   validateToken,
   validateAmount,
+  validateTxHash,
 } from '../../services/validators';
+
+// import {
+// } from '../services/validators';
 
 // invalid parameter errors
 
@@ -49,23 +53,8 @@ export const validateSpender: Validator = mkValidator(
   (val) =>
     typeof val === 'string' &&
     (val === 'uniswap' ||
-      val === 'uniswapLP' ||
-      val === 'pangolin' ||
       val === 'traderjoe' ||
-      val === 'sushiswap' ||
-      val === 'viperswap' ||
-      val === 'openocean' ||
-      val === 'quickswap' ||
-      val === 'mad_meerkat' ||
-      val === 'vvs' ||
       val === 'pancakeswap' ||
-      val === 'pancakeswapLP' ||
-      val === 'xsswap' ||
-      val === 'curve' ||
-      val === 'carbonamm' ||
-      val === 'balancer' ||
-      val === 'etcswapLP' ||
-      val === 'etcswap' ||
       isAddress(val))
 );
 
@@ -135,3 +124,15 @@ export const validateCancelRequest: RequestValidator = mkRequestValidator([
   validateNonce,
   validateAddress,
 ]);
+
+export const validatePollRequest: RequestValidator = mkRequestValidator([
+  validateTxHash,
+]);
+
+export const validateTokensRequest: RequestValidator = mkRequestValidator([
+  validateNetwork,
+]);
+
+export const validateEthPrivateKey = (privateKey: string): boolean => {
+  return /^(0x)?[a-fA-F0-9]{64}$/.test(privateKey);
+};

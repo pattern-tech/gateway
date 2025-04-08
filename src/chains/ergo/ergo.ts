@@ -8,11 +8,10 @@ import {
   DerivationPath,
 } from 'ergo-lib-wasm-nodejs';
 import LRUCache from 'lru-cache';
-import { ErgoController } from './ergo.controller';
+import { ErgoController } from './ergo.controllers';
 import { NodeService } from './node.service';
 import { getErgoConfig } from './ergo.config';
 import { DexService } from './dex.service';
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import {
   ErgoAccount,
   ErgoAsset,
@@ -34,19 +33,25 @@ import {
   AssetAmount,
   publicKeyFromAddress,
   TransactionContext,
-  RustModule, BoxSelection
-} from "@patternglobal/ergo-sdk";
+  RustModule,
+  BoxSelection,
+} from '@patternglobal/ergo-sdk';
+import crypto from 'crypto';
 import { NativeExFeeType } from '@patternglobal/ergo-dex-sdk/build/main/types';
-import { NetworkContext } from '@patternglobal/ergo-sdk/build/main/entities/networkContext';
+import { EpochParams, NetworkContext } from '@patternglobal/ergo-sdk/build/main/entities/networkContext';
 import { ErgoNetwork } from './types/ergo.type';
 import { getBaseInputParameters, getInputs, getTxContext } from './ergo.util';
 import { WalletProver } from './wallet-prover.service';
 import { BigNumber } from 'bignumber.js';
-import { PriceResponse, TradeResponse } from '../../amm/amm.requests';
 import { walletPath } from '../../services/base';
 import fse from 'fs-extra';
 import { ConfigManagerCertPassphrase } from '../../services/config-manager-cert-passphrase';
-import { HttpException, SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_CODE, SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_MESSAGE } from '../../services/error-handler';
+import {
+  HttpException,
+  SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_CODE,
+  SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_MESSAGE,
+} from '../../services/error-handler';
+import { PriceResponse, TradeResponse } from '../../connectors/connector.requests';
 
 /**
  * Extended AmmPool class with additional properties and methods
@@ -272,7 +277,7 @@ export class Ergo {
    */
   public getAccountFromSecretKey(secret: string): ErgoAccount {
     const sks = new SecretKeys();
-    const secretKey = SecretKey.dlog_from_bytes(Buffer.from(secret, 'hex'));
+    const secretKey = SecretKey.dlog_from_bytes(new Uint8Array(Buffer.from(secret, 'hex')));
     const address = secretKey.get_address().to_base58(this._networkPrefix);
 
     sks.add(secretKey);
@@ -317,16 +322,39 @@ export class Ergo {
    * @param {string} password - The password to use for encryption
    * @returns {string} The encrypted secret
    */
-  public encrypt(secret: string, password: string): string {
-    const iv = randomBytes(16);
-    const key = Buffer.alloc(32);
+  async encrypt(secret: string, password: string): Promise<string> {
+    const algorithm = 'aes-256-ctr';
+    const iv = crypto.randomBytes(16);
+    const salt = crypto.randomBytes(32);
+    const key = crypto.pbkdf2Sync(
+      password,
+      new Uint8Array(salt),
+      5000,
+      32,
+      'sha512',
+    );
+    const cipher = crypto.createCipheriv(
+      algorithm,
+      new Uint8Array(key),
+      new Uint8Array(iv),
+    );
 
-    key.write(password);
+    const encryptedBuffers = [
+      new Uint8Array(cipher.update(new Uint8Array(Buffer.from(secret)))),
+      new Uint8Array(cipher.final()),
+    ];
+    const encrypted = Buffer.concat(encryptedBuffers);
 
-    const cipher = createCipheriv('aes-256-cbc', key, iv);
-    const encrypted = Buffer.concat([cipher.update(secret), cipher.final()]);
+    const ivJSON = iv.toJSON();
+    const saltJSON = salt.toJSON();
+    const encryptedJSON = encrypted.toJSON();
 
-    return `${iv.toString('hex')}:${encrypted.toString('hex')}`;
+    return JSON.stringify({
+      algorithm,
+      iv: ivJSON,
+      salt: saltJSON,
+      encrypted: encryptedJSON,
+    });
   }
 
   /**
@@ -344,7 +372,7 @@ export class Ergo {
     if (!passphrase) {
       throw new Error('missing passphrase');
     }
-    const mnemonic = this.decrypt(encryptedMnemonic, passphrase);
+    const mnemonic = await this.decrypt(encryptedMnemonic, passphrase);
     return this.getAccountFromMnemonic(mnemonic);
   }
 
@@ -354,25 +382,29 @@ export class Ergo {
    * @param {string} password - The password to use for decryption
    * @returns {string} The decrypted secret
    */
-  public decrypt(encryptedSecret: string, password: string): string {
-    const [iv, encryptedKey] = encryptedSecret.split(':');
-    const key = Buffer.alloc(32);
+  async decrypt(encryptedSecret: string, password: string): Promise<string> {
+    const hash = JSON.parse(encryptedSecret);
+    const salt = new Uint8Array(Buffer.from(hash.salt, 'utf8'));
+    const iv = new Uint8Array(Buffer.from(hash.iv, 'utf8'));
 
-    key.write(password);
+    const key = crypto.pbkdf2Sync(password, salt, 5000, 32, 'sha512');
 
-    const decipher = createDecipheriv(
-      'aes-256-cbc',
-      key,
-      Buffer.from(iv, 'hex'),
+    const decipher = crypto.createDecipheriv(
+      hash.algorithm,
+      new Uint8Array(key),
+      iv,
     );
-    const decrypted = Buffer.concat([
-      decipher.update(Buffer.from(encryptedKey, 'hex')),
-      decipher.final(),
-    ]);
+
+    const decryptedBuffers = [
+      new Uint8Array(
+        decipher.update(new Uint8Array(Buffer.from(hash.encrypted, 'hex'))),
+      ),
+      new Uint8Array(decipher.final()),
+    ];
+    const decrypted = Buffer.concat(decryptedBuffers);
 
     return decrypted.toString();
   }
-
   /**
    * Gets the balance of a specific asset for an account
    * @param {ErgoAccount} account - The account to get the balance for
@@ -529,7 +561,6 @@ export class Ergo {
     return this._assetMap;
   }
 
-
   /**
    * Performs a swap operation
    * @param {ErgoAccount} account - The account performing the swap
@@ -552,20 +583,55 @@ export class Ergo {
   ): Promise<TradeResponse> {
     const config = getErgoConfig(this.network);
     const slippage = config.network.defaultSlippage;
-    const { realBaseToken, realQuoteToken, pool } = await this.findBestPool(baseToken, quoteToken, value, slippage);
-    const { sell, amount, from, to, minOutput } = this.calculateSwapParameters(pool, realBaseToken, value, slippage);
-    const { baseInput, baseInputAmount } = getBaseInputParameters(pool, { inputAmount: from, slippage: slippage || config.network.defaultSlippage });
+    const { realBaseToken, realQuoteToken, pool } = await this.findBestPool(
+      baseToken,
+      quoteToken,
+      value,
+      slippage,
+    );
+    const { sell, amount, from, to, minOutput } = this.calculateSwapParameters(
+      pool,
+      realBaseToken,
+      value,
+      slippage,
+    );
+    const { baseInput, baseInputAmount } = getBaseInputParameters(pool, {
+      inputAmount: from,
+      slippage: slippage || config.network.defaultSlippage,
+    });
 
     const networkContext = await this._explorer.getNetworkContext();
     const txAssembler = new DefaultTxAssembler(this.network === 'mainnet');
-    const poolActions = this.getPoolActions(output_address, account, txAssembler);
+    const poolActions = this.getPoolActions(
+      output_address,
+      account,
+      txAssembler,
+    );
 
     const utxos = await this.getAddressUnspentBoxes(account.address);
     const swapVariables = this.calculateSwapVariables(config, minOutput);
-    const inputs = this.prepareInputs(utxos, from, baseInputAmount, config, swapVariables[1]);
+    const inputs = this.prepareInputs(
+      utxos,
+      from,
+      baseInputAmount,
+      config,
+      swapVariables[1],
+    );
 
-    const swapParams = this.createSwapParams(pool, output_address, baseInput, to, swapVariables, config);
-    const txContext = this.createTxContext(inputs, networkContext, return_address, config);
+    const swapParams = this.createSwapParams(
+      pool,
+      output_address,
+      baseInput,
+      to,
+      swapVariables,
+      config,
+    );
+    const txContext = this.createTxContext(
+      inputs,
+      networkContext,
+      return_address,
+      config,
+    );
 
     const actions = poolActions(pool);
     const timestamp = await this.getBlockTimestamp(networkContext);
@@ -596,7 +662,18 @@ export class Ergo {
 
     await this.submitTransaction(account, tx);
 
-    return this.createTradeResponse(realBaseToken, realQuoteToken, amount, from, minOutput, pool, sell, config, timestamp, tx);
+    return this.createTradeResponse(
+      realBaseToken,
+      realQuoteToken,
+      amount,
+      from,
+      minOutput,
+      pool,
+      sell,
+      config,
+      timestamp,
+      tx,
+    );
   }
 
   /**
@@ -614,12 +691,32 @@ export class Ergo {
   ): Promise<PriceResponse> {
     const config = getErgoConfig(this.network);
     const slippage = config.network.defaultSlippage;
-    const { realBaseToken, realQuoteToken, pool } = await this.findBestPool(baseToken, quoteToken, value, slippage);
-    const { sell, amount, from, minOutput } = this.calculateSwapParameters(pool, realBaseToken, value, slippage);
+    const { realBaseToken, realQuoteToken, pool } = await this.findBestPool(
+      baseToken,
+      quoteToken,
+      value,
+      slippage,
+    );
+    const { sell, amount, from, minOutput } = this.calculateSwapParameters(
+      pool,
+      realBaseToken,
+      value,
+      slippage,
+    );
 
     const expectedAmount = this.calculateExpectedAmount(minOutput, pool, sell);
 
-    return this.createPriceResponse(realBaseToken, realQuoteToken, amount, from, minOutput, pool, sell, config, expectedAmount);
+    return this.createPriceResponse(
+      realBaseToken,
+      realQuoteToken,
+      amount,
+      from,
+      minOutput,
+      pool,
+      sell,
+      config,
+      expectedAmount,
+    );
   }
 
   /**
@@ -630,19 +727,39 @@ export class Ergo {
    * @param {number} [slippage] - The slippage tolerance
    * @returns {Promise<{ realBaseToken: ErgoAsset, realQuoteToken: ErgoAsset, pool: Pool }>}
    */
-  private async findBestPool(baseToken: string, quoteToken: string, value: BigNumber, slippage?: number): Promise<{ realBaseToken: ErgoAsset, realQuoteToken: ErgoAsset, pool: Pool }> {
+  private async findBestPool(
+    baseToken: string,
+    quoteToken: string,
+    value: BigNumber,
+    slippage?: number,
+  ): Promise<{
+    realBaseToken: ErgoAsset;
+    realQuoteToken: ErgoAsset;
+    pool: Pool;
+  }> {
     const pools = this.getPoolByToken(baseToken, quoteToken);
-    if (!pools.length) throw new Error(`Pool not found for ${baseToken} and ${quoteToken}`);
+    if (!pools.length)
+      throw new Error(`Pool not found for ${baseToken} and ${quoteToken}`);
 
     const realBaseToken = this.findToken(baseToken);
     const realQuoteToken = this.findToken(quoteToken);
-    if (!realBaseToken || !realQuoteToken) throw new Error(`Pool not found for ${baseToken} and ${quoteToken}`)
+    if (!realBaseToken || !realQuoteToken)
+      throw new Error(`Pool not found for ${baseToken} and ${quoteToken}`);
     let bestPool: Pool | null = null;
     let bestExpectedOut = BigNumber(0);
 
     for (const pool of pools) {
-      const { minOutput } = this.calculateSwapParameters(pool, realBaseToken, value, slippage);
-      const expectedOut = this.calculateExpectedAmount(minOutput, pool, pool.x.asset.id !== realBaseToken.tokenId);
+      const { minOutput } = this.calculateSwapParameters(
+        pool,
+        realBaseToken,
+        value,
+        slippage,
+      );
+      const expectedOut = this.calculateExpectedAmount(
+        minOutput,
+        pool,
+        pool.x.asset.id !== realBaseToken.tokenId,
+      );
 
       if (expectedOut.gt(bestExpectedOut)) {
         bestPool = pool;
@@ -650,7 +767,10 @@ export class Ergo {
       }
     }
 
-    if (!bestPool) throw new Error(`No suitable pool found for ${baseToken} and ${quoteToken}`);
+    if (!bestPool)
+      throw new Error(
+        `No suitable pool found for ${baseToken} and ${quoteToken}`,
+      );
 
     return { realBaseToken, realQuoteToken, pool: bestPool };
   }
@@ -661,7 +781,7 @@ export class Ergo {
    * @returns {ErgoAsset}
    */
   private findToken(symbol: string): ErgoAsset | undefined {
-    const token = this.storedAssetList.find(asset => asset.symbol === symbol);
+    const token = this.storedAssetList.find((asset) => asset.symbol === symbol);
     return token;
   }
 
@@ -673,7 +793,12 @@ export class Ergo {
    * @param {number} [slippage] - The slippage tolerance
    * @returns {{ sell: boolean, amount: BigNumber, from: any, to: any, minOutput: any }}
    */
-  private calculateSwapParameters(pool: Pool, baseToken: ErgoAsset, value: BigNumber, slippage?: number) {
+  private calculateSwapParameters(
+    pool: Pool,
+    baseToken: ErgoAsset,
+    value: BigNumber,
+    slippage?: number,
+  ) {
     const config = getErgoConfig(this.network);
     const sell = pool.x.asset.id !== baseToken.tokenId;
     const amount = this.calculateAmount(pool, value, sell);
@@ -688,7 +813,10 @@ export class Ergo {
         id: sell ? pool.y.asset.id : pool.x.asset.id,
         decimals: sell ? pool.y.asset.decimals : pool.x.asset.decimals,
       },
-      amount: pool.outputAmount(max_to as any, slippage || config.network.defaultSlippage).amount,
+      amount: pool.outputAmount(
+        max_to as any,
+        slippage || config.network.defaultSlippage,
+      ).amount,
     };
     if (from.amount === BigInt(0))
       throw new Error(`${amount} asset from ${max_to.asset.id} is not enough!`);
@@ -715,7 +843,11 @@ export class Ergo {
    * @param {boolean} sell - Whether it's a sell operation
    * @returns {BigNumber}
    */
-  private calculateAmount(pool: Pool, value: BigNumber, sell: boolean): BigNumber {
+  private calculateAmount(
+    pool: Pool,
+    value: BigNumber,
+    sell: boolean,
+  ): BigNumber {
     const decimals = sell ? pool.x.asset.decimals : pool.y.asset.decimals;
     return value.multipliedBy(BigNumber(10).pow(decimals as number));
   }
@@ -727,9 +859,15 @@ export class Ergo {
    * @param {boolean} sell - Whether it's a sell operation
    * @returns {BigNumber}
    */
-  private calculateExpectedAmount(minOutput: any, pool: Pool, sell: boolean): BigNumber {
+  private calculateExpectedAmount(
+    minOutput: any,
+    pool: Pool,
+    sell: boolean,
+  ): BigNumber {
     const decimals = sell ? pool.x.asset.decimals : pool.y.asset.decimals;
-    return BigNumber(minOutput.amount.toString()).div(BigNumber(10).pow(decimals as number));
+    return BigNumber(minOutput.amount.toString()).div(
+      BigNumber(10).pow(decimals as number),
+    );
   }
 
   /**
@@ -739,8 +877,16 @@ export class Ergo {
    * @param {DefaultTxAssembler} txAssembler - The transaction assembler
    * @returns {Function}
    */
-  private getPoolActions(output_address: string, account: ErgoAccount, txAssembler: DefaultTxAssembler) {
-    return makeWrappedNativePoolActionsSelector(output_address, account.prover, txAssembler);
+  private getPoolActions(
+    output_address: string,
+    account: ErgoAccount,
+    txAssembler: DefaultTxAssembler,
+  ) {
+    return makeWrappedNativePoolActionsSelector(
+      output_address,
+      account.prover,
+      txAssembler,
+    );
   }
 
   /**
@@ -749,7 +895,10 @@ export class Ergo {
    * @param {any} minOutput - The minimum output
    * @returns {[number, SwapExtremums]}
    */
-  private calculateSwapVariables(config: any, minOutput: any): [number, SwapExtremums] {
+  private calculateSwapVariables(
+    config: any,
+    minOutput: any,
+  ): [number, SwapExtremums] {
     const swapVariables = swapVars(
       BigInt(config.network.defaultMinerFee.multipliedBy(3).toString()),
       config.network.minNitro,
@@ -768,7 +917,13 @@ export class Ergo {
    * @param {SwapExtremums} extremum - The swap extremums
    * @returns {any[]}
    */
-  private prepareInputs(utxos: any[], from: any, baseInputAmount: BigNumber, config: any, extremum: SwapExtremums): BoxSelection {
+  private prepareInputs(
+    utxos: any[],
+    from: any,
+    baseInputAmount: BigNumber,
+    config: any,
+    extremum: SwapExtremums,
+  ): BoxSelection {
     return getInputs(
       utxos.map((utxo) => ({
         ...utxo,
@@ -797,7 +952,14 @@ export class Ergo {
    * @param {any} config - The Ergo configuration
    * @returns {SwapParams<NativeExFeeType>}
    */
-  private createSwapParams(pool: Pool, output_address: string, baseInput: any, to: any, swapVariables: [number, SwapExtremums], config: any): SwapParams<NativeExFeeType> {
+  private createSwapParams(
+    pool: Pool,
+    output_address: string,
+    baseInput: any,
+    to: any,
+    swapVariables: [number, SwapExtremums],
+    config: any,
+  ): SwapParams<NativeExFeeType> {
     const [exFeePerToken, extremum] = swapVariables;
     const pk = publicKeyFromAddress(output_address);
     if (!pk) throw new Error(`output_address is not defined.`);
@@ -823,7 +985,12 @@ export class Ergo {
    * @param {any} config - The Ergo configuration
    * @returns {TransactionContext}
    */
-  private createTxContext(inputs: BoxSelection, networkContext: NetworkContext, return_address: string, config: any): TransactionContext {
+  private createTxContext(
+    inputs: BoxSelection,
+    networkContext: NetworkContext,
+    return_address: string,
+    config: any,
+  ): TransactionContext {
     return getTxContext(
       inputs,
       networkContext,
@@ -837,8 +1004,12 @@ export class Ergo {
    * @param {NetworkContext} networkContext - The network context
    * @returns {Promise<number>}
    */
-  private async getBlockTimestamp(networkContext: NetworkContext): Promise<number> {
-    const blockInfo = await this._node.getBlockInfo(networkContext.height.toString());
+  private async getBlockTimestamp(
+    networkContext: NetworkContext,
+  ): Promise<number> {
+    const blockInfo = await this._node.getBlockInfo(
+      networkContext.height.toString(),
+    );
     return blockInfo.header.timestamp;
   }
 
@@ -847,7 +1018,10 @@ export class Ergo {
    * @param {ErgoAccount} account - The account submitting the transaction
    * @param {any} tx - The transaction to submit
    */
-  private async submitTransaction(account: ErgoAccount, tx: any): Promise<void> {
+  private async submitTransaction(
+    account: ErgoAccount,
+    tx: any,
+  ): Promise<void> {
     const submit_tx = await account.prover.submit(tx);
     if (!submit_tx.id) throw new Error(`Error during submit tx!`);
   }
@@ -876,7 +1050,7 @@ export class Ergo {
     sell: boolean,
     config: any,
     timestamp: number,
-    tx: any
+    tx: any,
   ): TradeResponse {
     const xDecimals = pool.x.asset.decimals as number;
     const yDecimals = pool.y.asset.decimals as number;
@@ -889,7 +1063,10 @@ export class Ergo {
       quote: realQuoteToken.symbol,
       amount: this.formatAmount(amount, sell ? xDecimals : yDecimals),
       rawAmount: this.formatAmount(amount, sell ? xDecimals : yDecimals),
-      expectedOut: this.formatAmount(BigNumber(minOutput.amount.toString()), sell ? xDecimals : yDecimals),
+      expectedOut: this.formatAmount(
+        BigNumber(minOutput.amount.toString()),
+        sell ? xDecimals : yDecimals,
+      ),
       price: this.calculatePrice(minOutput, from, sell, xDecimals, yDecimals),
       gasPrice: this.calculateGas(config.network.minTxFee),
       gasPriceToken: 'ERG',
@@ -921,7 +1098,7 @@ export class Ergo {
     pool: Pool,
     sell: boolean,
     config: any,
-    expectedAmount: BigNumber
+    expectedAmount: BigNumber,
   ): PriceResponse {
     const xDecimals = pool.x.asset.decimals as number;
     const yDecimals = pool.y.asset.decimals as number;
@@ -962,19 +1139,31 @@ export class Ergo {
    * @param {number} yDecimals - The decimals of the y asset
    * @returns {string}
    */
-  private calculatePrice(minOutput: any, from: any, sell: boolean, xDecimals: number, yDecimals: number): string {
+  private calculatePrice(
+    minOutput: any,
+    from: any,
+    sell: boolean,
+    xDecimals: number,
+    yDecimals: number,
+  ): string {
     if (sell) {
       return BigNumber(1)
         .div(
           BigNumber(minOutput.amount.toString())
             .div(BigNumber(10).pow(xDecimals))
-            .div(BigNumber(from.amount.toString()).div(BigNumber(10).pow(yDecimals)))
+            .div(
+              BigNumber(from.amount.toString()).div(
+                BigNumber(10).pow(yDecimals),
+              ),
+            ),
         )
         .toString();
     } else {
       return BigNumber(minOutput.amount.toString())
         .div(BigNumber(10).pow(yDecimals))
-        .div(BigNumber(from.amount.toString()).div(BigNumber(10).pow(xDecimals)))
+        .div(
+          BigNumber(from.amount.toString()).div(BigNumber(10).pow(xDecimals)),
+        )
         .toString();
     }
   }
@@ -1031,5 +1220,21 @@ export class Ergo {
    */
   public async getTx(id: string): Promise<ErgoTxFull | undefined> {
     return await this._node.getTxsById(id);
+  }
+
+  /**
+   * Gets explorer url 
+   * @returns {string} The Explorer url
+   */
+  public getExplorerUrl(): string {
+    return this._explorer.uri
+  }
+
+  /**
+   * Gets current epoch 
+   * @returns {string} The Explorer url
+   */
+  public async getCurrentEpoch(): Promise<EpochParams> {
+    return (await this._explorer.getNetworkContext()).epoch
   }
 }
