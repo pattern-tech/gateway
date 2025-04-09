@@ -67,8 +67,24 @@ jest.mock('@patternglobal/ergo-dex-sdk', () => ({
 }));
 jest.mock('@patternglobal/ergo-sdk', () => ({
   Explorer: jest.fn().mockReturnValue({
-    getNetworkContext: jest.fn().mockReturnValue({ height: 1 } as any),
-    uri: 'https://example.com/explorer'
+    getNetworkContext: jest
+      .fn()
+      .mockReturnValue({
+        height: 1,
+        epoch: {
+          height: 1,
+          storageFeeFactor: BigInt(1),
+          minValuePerByte: BigInt(1),
+          maxBlockSize: 1,
+          maxBlockCost: BigInt(1),
+          blockVersion: 1,
+          tokenAccessCost: BigInt(1),
+          inputCost: BigInt(1),
+          dataInputCost: BigInt(1),
+          outputCost: BigInt(1),
+        },
+      }),
+    uri: 'https://example.com/explorer',
   }),
   AssetAmount: jest.fn(),
   publicKeyFromAddress: jest
@@ -1882,6 +1898,35 @@ describe('Ergo', () => {
     it('Should return the correct Explorer URL', () => {
       const explorerUrl = ergo.getExplorerUrl();
       expect(explorerUrl).toBe('https://example.com/explorer');
+    });
+  });
+
+  describe('getCurrentEpoch', () => {
+    it('Should return the current epoch from the Explorer', async () => {
+
+      const currentEpoch = await ergo.getCurrentEpoch();
+      expect(currentEpoch).toEqual({
+        height: 1,
+        storageFeeFactor: BigNumber(1),
+        minValuePerByte: BigNumber(1),
+        maxBlockSize: 1,
+        maxBlockCost: BigNumber(1),
+        blockVersion: 1,
+        tokenAccessCost: BigNumber(1),
+        inputCost: BigNumber(1),
+        dataInputCost: BigNumber(1),
+        outputCost: BigNumber(1),
+      });
+      expect(ergo[''].getNetworkContext).toHaveBeenCalledTimes(1);
+    });
+
+    it('Should handle errors gracefully when fetching the current epoch', async () => {
+        jest.spyOn(ergo['_explorer'], 'getNetworkContext').mockRejectedValue(
+          new Error('Network error'),
+        );
+
+      await expect(ergo.getCurrentEpoch()).rejects.toThrow('Network error');
+      expect(ergo['_explorer'].getNetworkContext).toHaveBeenCalledTimes(1);
     });
   });
 });
