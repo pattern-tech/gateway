@@ -1907,17 +1907,17 @@ describe('Ergo', () => {
       const currentEpoch = await ergo.getCurrentEpoch();
       expect(currentEpoch).toEqual({
         height: 1,
-        storageFeeFactor: BigNumber(1),
-        minValuePerByte: BigNumber(1),
+        storageFeeFactor: BigInt(1),
+        minValuePerByte: BigInt(1),
         maxBlockSize: 1,
-        maxBlockCost: BigNumber(1),
+        maxBlockCost: BigInt(1),
         blockVersion: 1,
-        tokenAccessCost: BigNumber(1),
-        inputCost: BigNumber(1),
-        dataInputCost: BigNumber(1),
-        outputCost: BigNumber(1),
+        tokenAccessCost: BigInt(1),
+        inputCost: BigInt(1),
+        dataInputCost: BigInt(1),
+        outputCost: BigInt(1),
       });
-      expect(ergo[''].getNetworkContext).toHaveBeenCalledTimes(1);
+      expect(ergo['_explorer'].getNetworkContext).toHaveBeenCalledTimes(1);
     });
 
     it('Should handle errors gracefully when fetching the current epoch', async () => {
