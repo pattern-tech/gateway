@@ -68,6 +68,7 @@ jest.mock('@patternglobal/ergo-dex-sdk', () => ({
 jest.mock('@patternglobal/ergo-sdk', () => ({
   Explorer: jest.fn().mockReturnValue({
     getNetworkContext: jest.fn().mockReturnValue({ height: 1 } as any),
+    uri: 'https://example.com/explorer'
   }),
   AssetAmount: jest.fn(),
   publicKeyFromAddress: jest
@@ -1871,6 +1872,16 @@ describe('Ergo', () => {
       const result = await ergo.getTx('id');
       expect(ergo['_node'].getTxsById).toHaveBeenCalledWith('id');
       expect(result).toEqual('TX');
+    });
+  });
+
+  describe('getExplorerUrl', () => {
+    it('Shoud be defined', () => {
+      expect(ergo.getExplorerUrl).toBeDefined();
+    });
+    it('Should return the correct Explorer URL', () => {
+      const explorerUrl = ergo.getExplorerUrl();
+      expect(explorerUrl).toBe('https://example.com/explorer');
     });
   });
 });
