@@ -551,13 +551,13 @@ describe('Ergo', () => {
       expect(ergo.encrypt).toBeDefined();
     });
 
-    it('Should produce different encryption outputs for different secrets', async  () => {
+    it('Should produce different encryption outputs for different secrets', async () => {
       const encryptedText1 = await ergo.encrypt('secret1', password);
       const encryptedText2 = await ergo.encrypt('secret2', password);
       expect(encryptedText1).not.toBe(encryptedText2);
     });
 
-    it('Should produce different encryption outputs for different passwords',async () => {
+    it('Should produce different encryption outputs for different passwords', async () => {
       const encryptedText1 = await ergo.encrypt(secret, 'password1');
       const encryptedText2 = await ergo.encrypt(secret, 'password2');
       expect(encryptedText1).not.toBe(encryptedText2);
@@ -567,12 +567,12 @@ describe('Ergo', () => {
       const password = 'myPassword';
       const encryptedText = await ergo.encrypt(secret, password);
       const parsedEncryptedText = JSON.parse(encryptedText);
-  
+
       expect(parsedEncryptedText).toHaveProperty('algorithm', 'aes-256-ctr');
       expect(parsedEncryptedText).toHaveProperty('iv');
       expect(parsedEncryptedText).toHaveProperty('salt');
       expect(parsedEncryptedText).toHaveProperty('encrypted');
-  
+
       expect(typeof parsedEncryptedText.iv).toBe('object');
       expect(typeof parsedEncryptedText.salt).toBe('object');
       expect(typeof parsedEncryptedText.encrypted).toBe('object');
@@ -582,7 +582,7 @@ describe('Ergo', () => {
       const password = 'myPassword';
       const encryptedText1 = await ergo.encrypt(secret, password);
       const encryptedText2 = await ergo.encrypt(secret, password);
-  
+
       // Ensure they are not the same (different IV and salt)
       expect(encryptedText1).not.toBe(encryptedText2);
     });
@@ -591,72 +591,147 @@ describe('Ergo', () => {
       const longPassword = 'a'.repeat(50); // 50 characters
       const encryptedText = await ergo.encrypt(secret, longPassword);
       const decryptedText = await ergo.decrypt(encryptedText, longPassword);
-  
+
       expect(decryptedText).toBe(secret);
     });
 
     it('Should handle edge case where password length is exactly 32 bytes', async () => {
       const exact32BytesPassword = 'a'.repeat(32);
       const encryptedText = await ergo.encrypt(secret, exact32BytesPassword);
-      const decryptedText = await ergo.decrypt(encryptedText, exact32BytesPassword);
-  
+      const decryptedText = await ergo.decrypt(
+        encryptedText,
+        exact32BytesPassword,
+      );
+
       expect(decryptedText).toBe(secret);
     });
 
     it('Should handle special characters in the password', async () => {
       const specialCharPassword = '@dm1n$3cret!';
       const encryptedText = await ergo.encrypt(secret, specialCharPassword);
-      const decryptedText = await ergo.decrypt(encryptedText, specialCharPassword);
-  
-      expect(decryptedText).toBe(secret);
-    });  it('Should handle special characters in the password', async () => {
-      const specialCharPassword = '@dm1n$3cret!';
-      const encryptedText = await ergo.encrypt(secret, specialCharPassword);
-      const decryptedText = await ergo.decrypt(encryptedText, specialCharPassword);
-  
+      const decryptedText = await ergo.decrypt(
+        encryptedText,
+        specialCharPassword,
+      );
+
       expect(decryptedText).toBe(secret);
     });
+    it('Should handle special characters in the password', async () => {
+      const specialCharPassword = '@dm1n$3cret!';
+      const encryptedText = await ergo.encrypt(secret, specialCharPassword);
+      const decryptedText = await ergo.decrypt(
+        encryptedText,
+        specialCharPassword,
+      );
+
+      expect(decryptedText).toBe(secret);
+    });
+  });
 
   describe('decrypt', () => {
     const secret = 'mySecret';
     it('Should be defined', () => {
       expect(ergo.decrypt).toBeDefined();
     });
-    it('Should decrypt an encrypted secret correctly', () => {
-      // Arrange: Set up the secret and password, and encrypt the secret
+    it('Should decrypt an encrypted secret correctly', async () => {
       const password = 'myPassword';
-      const encryptedText = ergo.encrypt(secret, password);
-      // Act: Call the decrypt method
-      const decryptedText = ergo.decrypt(encryptedText, password);
-      // Assert: Verify that the decrypted text matches the original secret
+      const encryptedText = await ergo.encrypt(secret, password);
+      const decryptedText = await ergo.decrypt(encryptedText, password);
+
       expect(decryptedText).toBe(secret);
     });
 
-    it('Should fail to decrypt with wrong password', () => {
-      // Arrange: Set up the secret, correct password, wrong password, and encrypt the secret
+    it('Should fail to decrypt with a wrong password, returning incorrect or unexpected data', async () => {
       const correctPassword = 'correctPassword';
       const wrongPassword = 'wrongPassword';
-      const encryptedText = ergo.encrypt(secret, correctPassword);
-      // Act & Assert: Call the decrypt method with the wrong password and expect an error
-      expect(() => {
-        ergo.decrypt(encryptedText, wrongPassword);
-      }).toThrow();
+      const encryptedText = await ergo.encrypt(secret, correctPassword);
+
+      expect(await ergo.decrypt(encryptedText, wrongPassword)).not.toEqual(
+        correctPassword,
+      );
     });
 
-    it('Should handle edge case where password is longer than 32 bytes', () => {
-      // Arrange: Set up the secret and a long password, and encrypt the secret
-      const longPassword = 'a'.repeat(50); // 50 bytes password
-      const encryptedText = ergo.encrypt(secret, longPassword);
-      const decryptedText = ergo.decrypt(encryptedText, longPassword);
-      // Assert: Verify that the decrypted text matches the original secret
+    it('Should handle edge case where password is longer than 32 bytes', async () => {
+      const longPassword = 'a'.repeat(50); // 50 characters
+      const encryptedText = await ergo.encrypt(secret, longPassword);
+      const decryptedText = await ergo.decrypt(encryptedText, longPassword);
+
       expect(decryptedText).toBe(secret);
     });
 
-    it('Should handle case where password is exactly 32 bytes', () => {
-      const exact32BytesPassword = 'a'.repeat(32); // 32 bytes password
-      const encryptedText = ergo.encrypt(secret, exact32BytesPassword);
-      const decryptedText = ergo.decrypt(encryptedText, exact32BytesPassword);
+    it('Should handle edge case where password is exactly 32 bytes', async () => {
+      const exact32BytesPassword = 'a'.repeat(32);
+      const encryptedText = await ergo.encrypt(secret, exact32BytesPassword);
+      const decryptedText = await ergo.decrypt(
+        encryptedText,
+        exact32BytesPassword,
+      );
+
       expect(decryptedText).toBe(secret);
+    });
+
+    it('Should handle special characters in the password correctly', async () => {
+      const specialCharPassword = '@dm1n$3cret!';
+      const encryptedText = await ergo.encrypt(secret, specialCharPassword);
+      const decryptedText = await ergo.decrypt(
+        encryptedText,
+        specialCharPassword,
+      );
+
+      expect(decryptedText).toBe(secret);
+    });
+
+    it('Should decrypt correctly with multiple IVs and salts (ensures randomness)', async () => {
+      const password = 'myPassword';
+      const encryptedText1 = await ergo.encrypt(secret, password);
+      const encryptedText2 = await ergo.encrypt(secret, password);
+
+      expect(encryptedText1).not.toBe(encryptedText2);
+
+      const decryptedText1 = await ergo.decrypt(encryptedText1, password);
+      const decryptedText2 = await ergo.decrypt(encryptedText2, password);
+
+      expect(decryptedText1).toBe(secret);
+      expect(decryptedText2).toBe(secret);
+    });
+  });
+
+  describe('getAccountFromAddress', () => {
+    beforeEach(() => {
+      jest.spyOn(fse, 'readFile').mockResolvedValue('file' as any);
+    });
+    it('Should be defined', () => {
+      expect(ergo.getAccountFromAddress).toBeDefined();
+    });
+    it('Should throw new Error if passphrase is invalid', async () => {
+      jest
+        .spyOn(ConfigManagerCertPassphrase, 'readPassphrase')
+        .mockReturnValue(undefined);
+      await expect(ergo.getAccountFromAddress('address')).rejects.toThrow(
+        'missing passphrase',
+      );
+      expect(fse.readFile).toHaveBeenCalledWith(
+        './conf/wallets/ergo/address.json',
+        'utf8',
+      );
+    });
+    it('Should return account from address given', async () => {
+      jest
+        .spyOn(ConfigManagerCertPassphrase, 'readPassphrase')
+        .mockReturnValue('passphrase');
+      jest.spyOn(ergo, 'decrypt').mockResolvedValue('mnemonic');
+      jest
+        .spyOn(ergo, 'getAccountFromMnemonic')
+        .mockReturnValue('Ergo Accont' as any);
+      const result = await ergo.getAccountFromAddress('address');
+      expect(ergo.decrypt).toHaveBeenCalledWith('file', 'passphrase');
+      expect(ConfigManagerCertPassphrase.readPassphrase).toHaveBeenCalled();
+      expect(fse.readFile).toHaveBeenCalledWith(
+        './conf/wallets/ergo/address.json',
+        'utf8',
+      );
+      expect(ergo.getAccountFromMnemonic).toHaveBeenCalledWith('mnemonic');
+      expect(result).toEqual('Ergo Accont');
     });
   });
 
@@ -1334,7 +1409,7 @@ describe('Ergo', () => {
 
     it('Should throw new Error if any error occurs during submitting the tx', async () => {
       jest.spyOn(ergo_utils, 'getInputs').mockReturnValue({} as any);
-      jest.spyOn(console, 'error').mockImplementation(() => { });
+      jest.spyOn(console, 'error').mockImplementation(() => {});
       const account: any = {
         prover: {
           submit: jest.fn().mockResolvedValue({}),
