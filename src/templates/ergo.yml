@@ -12,3 +12,4 @@ networks:
     defaultMinerFee: 2000000
     minNitro: 1.2
     minBoxValue: 400000
+    nativeCurrencySymbol: "ERG"

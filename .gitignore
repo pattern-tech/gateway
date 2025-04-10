@@ -15,3 +15,9 @@ package-lock.json
 # VSCode
 .vscode/
 .history
+
+# .env
+.env
+
+# docker build ssh files
+/docker_ssh
