@@ -46,6 +46,9 @@ importers:
       '@fastify/type-provider-typebox':
         specifier: ^4.1.0
         version: 4.1.0(@sinclair/typebox@0.33.22)
+      '@fleet-sdk/common':
+        specifier: ^0.8.0
+        version: 0.8.0
       '@fleet-sdk/core':
         specifier: ^0.8.2
         version: 0.8.2
