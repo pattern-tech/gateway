@@ -4,6 +4,7 @@ import { Solana } from '../chains/solana/solana';
 import { Ethereum } from '../chains/ethereum/ethereum';
 import { ethers } from 'ethers';
 import { logger } from '../services/logger';
+import { Ergo } from '../chains/ergo/ergo';
 
 /**
  * The Balance command retrieves balance information for a given wallet on a specified chain.
@@ -98,6 +99,23 @@ export default class Balance extends Command {
         logger.info(`Ethereum wallet balance for ${wallet}: ${balanceEth} ETH`);
       } catch (error: any) {
         this.error(`Error getting Ethereum balance: ${error.message}`);
+      }
+    } else if (chain.toLowerCase() === 'ergo') {
+      // Get an Ergo instance for the given network.
+      const ergo = Ergo.getInstance(network);
+
+      if (!wallet) {
+        this.error('For ergo, please supply a wallet address.');
+      }
+
+      try {
+        const utxos = await ergo.getAddressUnspentBoxes(wallet);
+        let balance = ergo.getBalance(utxos);
+        logger.info(
+          `Ergo wallet balance for ${wallet}: ${balance.balance} Ergs`,
+        );
+      } catch (error: any) {
+        this.error(`Error getting Ergo balance: ${error.message}`);
       }
     } else {
       this.error(`Unsupported chain: ${chain}`);
