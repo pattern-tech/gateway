@@ -7,7 +7,7 @@ import {
   ExtSecretKey,
   DerivationPath,
 } from 'ergo-lib-wasm-nodejs';
-import LRUCache from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 import { ErgoController } from './ergo.controllers';
 import { NodeService } from './node.service';
 import { getErgoConfig } from './ergo.config';
