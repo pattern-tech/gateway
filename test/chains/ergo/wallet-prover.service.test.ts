@@ -21,7 +21,9 @@ describe('WalletProver', () => {
   });
 
   describe('sign', () => {
-    const tx = new Transaction();
+    const tx = {
+      to_js_eip12: jest.fn().mockReturnValue({} as any),
+    } as unknown as Transaction;
     beforeEach(() => {
       jest.spyOn(JSON, 'stringify').mockReturnValue({} as any);
       jest.spyOn(nodeService, 'getCtx').mockResolvedValue({} as any);
@@ -35,7 +37,6 @@ describe('WalletProver', () => {
       expect(prover.sign).toBeDefined();
     });
     it('Should sign the transaction successfully', async () => {
-      jest.spyOn(tx, 'to_js_eip12').mockReturnValue({} as any);
       jest.spyOn(ErgoBoxes, 'from_boxes_json').mockReturnValue({} as any);
       jest.spyOn(ErgoBoxes, 'empty').mockReturnValue({} as any);
       const result = await prover.sign('tx' as any);
