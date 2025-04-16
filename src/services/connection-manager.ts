@@ -28,10 +28,7 @@ export async function getInitializedChain<_T>(
   chain: string,
   network: string,
 ): Promise<ChainInstance> {
-  const chainInstance = (await getChainInstance(
-    chain,
-    network,
-  )) as ChainInstance;
+  const chainInstance = await getChainInstance(chain, network) as ChainInstance;
 
   if (chainInstance === undefined) {
     throw new UnsupportedChainException(`unsupported chain ${chain}`);

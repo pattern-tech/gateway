@@ -40,6 +40,7 @@ export function getErgoConfig(network: ErgoNetwork): ErgoConfig {
       minBoxValue: BigNumber(
         configManager.get(`ergo.networks.${network}.minBoxValue`),
       ),
+      nativeCurrencySymbol: configManager.get(`ergo.networks.${network}.nativeCurrencySymbol`)
     },
   };
 }

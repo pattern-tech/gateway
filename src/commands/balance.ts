@@ -14,15 +14,13 @@ import { Ergo } from '../chains/ergo/ergo';
  *  - Query the provider (via ethers) for the "ethereum" chain.
  */
 export default class Balance extends Command {
-  static description =
-    'Retrieve token balances for a wallet on the specified chain';
+  static description = 'Retrieve token balances for a wallet on the specified chain';
 
   static flags = {
     // Specify the chain ("solana" or "ethereum")
     chain: flags.string({
       char: 'c',
-      description:
-        'Blockchain to check balance from (solana | ethereum | Ergo)',
+      description: 'Blockchain to check balance from (solana | ethereum)',
       required: true,
     }),
     // The wallet address or identifier
@@ -48,13 +46,11 @@ export default class Balance extends Command {
   async run() {
     const { flags } = this.parse(Balance);
     const { chain, wallet, network, symbol } = flags;
-
+    
     if (chain.toLowerCase() === 'solana') {
       // Get a Solana instance for the given network (e.g. mainnet-beta)
-      const solana = await Solana.getInstance(
-        network === 'mainnet' ? 'mainnet-beta' : network,
-      );
-
+      const solana = await Solana.getInstance(network === 'mainnet' ? 'mainnet-beta' : network);
+      
       // Determine wallet:
       // If a wallet identifier (the filename) is provided, use it;
       // otherwise, try to use the first available wallet.
@@ -66,7 +62,7 @@ export default class Balance extends Command {
           this.error('No wallet provided and none found on file.');
         }
       }
-
+      
       // Load the wallet (returns a Keypair)
       try {
         keypair = await solana.getWallet(walletIdentifier);
@@ -77,23 +73,21 @@ export default class Balance extends Command {
       // Call the getBalance function on the Solana instance.
       // The "symbol" flag can be used to filter tokens if needed.
       try {
-        const balances = await solana.getBalance(
-          keypair,
-          symbol ? [symbol] : undefined,
-        );
+        const balances = await solana.getBalance(keypair, symbol ? [symbol] : undefined);
         logger.info(`Solana wallet balance for ${walletIdentifier}:`);
         logger.info(JSON.stringify(balances, null, 2));
       } catch (error: any) {
         this.error(`Error getting Solana balance: ${error.message}`);
       }
+      
     } else if (chain.toLowerCase() === 'ethereum') {
       // Get an Ethereum instance for the given network.
       const ethereum = Ethereum.getInstance(network);
-
+      
       if (!wallet) {
         this.error('For Ethereum, please supply a wallet address.');
       }
-
+      
       try {
         // Get the provider from the Ethereum instance.
         // (Ethereum.provider is assumed to be an ethers Provider)
@@ -107,7 +101,7 @@ export default class Balance extends Command {
         this.error(`Error getting Ethereum balance: ${error.message}`);
       }
     } else if (chain.toLowerCase() === 'ergo') {
-      // Get an Ethereum instance for the given network.
+      // Get an Ergo instance for the given network.
       const ergo = Ergo.getInstance(network);
 
       if (!wallet) {
@@ -121,7 +115,7 @@ export default class Balance extends Command {
           `Ergo wallet balance for ${wallet}: ${balance.balance} Ergs`,
         );
       } catch (error: any) {
-        this.error(`Error getting Ethereum balance: ${error.message}`);
+        this.error(`Error getting Ergo balance: ${error.message}`);
       }
     } else {
       this.error(`Unsupported chain: ${chain}`);

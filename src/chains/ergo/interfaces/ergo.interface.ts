@@ -20,6 +20,7 @@ export interface ErgoNetworkConfig {
   defaultMinerFee: BigNumber;
   minNitro: number;
   minBoxValue: BigNumber;
+  nativeCurrencySymbol: string;
 }
 export interface ErgoConfig {
   network: ErgoNetworkConfig;

@@ -11,7 +11,7 @@ import {
   AddLiquidityRequest, 
   AddLiquidityResponse, 
   AddLiquidityResponseType 
-} from '../../../services/clmm-interfaces';
+} from '../../../schemas/trading-types/clmm-schema';
 import { Type, Static } from '@sinclair/typebox';
 import { httpBadRequest, httpNotFound, ERROR_MESSAGES } from '../../../services/error-handler';
 
@@ -25,7 +25,7 @@ async function addLiquidity(
   baseTokenAmount: number,
   quoteTokenAmount: number,
   slippagePct?: number,
-  strategyType: StrategyType = StrategyType.Spot
+  strategyType: StrategyType = StrategyType.SpotBalanced
 ): Promise<AddLiquidityResponseType> {
   // Validate addresses first
   try {
@@ -93,10 +93,10 @@ async function addLiquidity(
   const minBinId = position.positionData.lowerBinId;
 
   const totalXAmount = new BN(
-    DecimalUtil.toBN(new Decimal(baseTokenAmount), dlmmPool.tokenX.mint.decimals)
+    DecimalUtil.toBN(new Decimal(baseTokenAmount), dlmmPool.tokenX.decimal)
   );
   const totalYAmount = new BN(
-    DecimalUtil.toBN(new Decimal(quoteTokenAmount), dlmmPool.tokenY.mint.decimals)
+    DecimalUtil.toBN(new Decimal(quoteTokenAmount), dlmmPool.tokenY.decimal)
   );
 
   const addLiquidityTx = await dlmmPool.addLiquidityByStrategy({
@@ -170,7 +170,7 @@ export const addLiquidityRoute: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         description: 'Add liquidity to a Meteora position',
-        tags: ['meteora'],
+        tags: ['meteora/clmm'],
         body: {
           ...AddLiquidityRequest,
           properties: {
@@ -179,7 +179,7 @@ export const addLiquidityRoute: FastifyPluginAsync = async (fastify) => {
             slippagePct: { type: 'number', examples: [1] },
             strategyType: { 
               type: 'number', 
-              examples: [StrategyType.Spot],
+              examples: [StrategyType.SpotImBalanced],
               enum: Object.values(StrategyType).filter(x => typeof x === 'number')
             },
           }

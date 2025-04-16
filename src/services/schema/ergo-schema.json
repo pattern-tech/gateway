@@ -43,6 +43,9 @@
               },
               "minBoxValue": {
                 "type": "number"
+              },
+              "nativeCurrencySymbol": {
+                "type": "string"
               }
             },
             "required": [
@@ -57,7 +60,8 @@
               "defaultSlippage",
               "defaultMinerFee",
               "minNitro",
-              "minBoxValue"
+              "minBoxValue", 
+              "nativeCurrencySymbol"
             ],
             "additionalProperties": false
           }

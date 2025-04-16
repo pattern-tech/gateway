@@ -92,7 +92,7 @@ export class NodeService {
     const pre_header = PreHeader.from_block_header(
       blockHeaders.get(blockHeaders.len() - 1),
     );
-    return new ErgoStateContext(pre_header, blockHeaders);
+    return new ErgoStateContext(pre_header, blockHeaders, {} as any); // TODO: fix third input 
   }
 
   async postTransaction(tx: any): Promise<string> {

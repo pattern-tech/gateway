@@ -24,8 +24,8 @@ import { jupiterRoutes } from './connectors/jupiter/jupiter.routes';
 import { meteoraRoutes } from './connectors/meteora/meteora.routes';
 import { uniswapRoutes } from './connectors/uniswap/uniswap.routes';
 import { raydiumRoutes } from './connectors/raydium/raydium.routes';
-import ergoRoutes from './chains/ergo/ergo.routes';
-import spectrumRoutes from './connectors/spectrum/spectrum.routes';
+import { ergoRoutes } from './chains/ergo/ergo.routes';
+import { spectrumRoutes } from './connectors/spectrum/spectrum.routes';
 
 
 // Change version for each release
@@ -58,16 +58,14 @@ const swaggerOptions = {
       { name: 'config', description: 'Configuration endpoints' },
       { name: 'wallet', description: 'Wallet endpoints' },
       { name: 'solana', description: 'Solana chain endpoints' },
-      { name: 'meteora', description: 'Meteora DLMM endpoints' },
-      { name: 'raydium-clmm', description: 'Raydium CLMM endpoints' },
-      { name: 'raydium-amm', description: 'Raydium AMM/CPMM endpoints' },
-      { name: 'jupiter', description: 'Jupiter swap endpoints' },
+      { name: 'jupiter', description: 'Jupiter connector endpoints' },
+      { name: 'raydium/clmm', description: 'Raydium CLMM connector endpoints' },
+      { name: 'raydium/amm', description: 'Raydium AMM connector endpoints' },
+      { name: 'meteora/clmm', description: 'Meteora CLMM connector endpoints' },
+      { name: 'uniswap', description: 'Uniswap connector endpoints' },
       { name: 'ethereum', description: 'Ethereum chain endpoints' },
-      { name: 'uniswap', description: 'Uniswap swap endpoints' },
       { name: 'ergo', description: 'Ergo chain endpoints' },
       { name: 'spectrum', description: 'Spectrum swap endpoints' },
-
-
     ],
     components: {
       parameters: {
@@ -163,14 +161,19 @@ const configureGatewayServer = () => {
     app.register(configRoutes, { prefix: '/config' });
     app.register(connectorsRoutes, { prefix: '/connectors' });
     app.register(walletRoutes, { prefix: '/wallet' });
-    app.register(jupiterRoutes, { prefix: '/jupiter' });
-    app.register(meteoraRoutes, { prefix: '/meteora' });
+    app.register(jupiterRoutes.swap, { prefix: '/jupiter' });
+    
+    // Meteora routes
+    app.register(meteoraRoutes.clmm, { prefix: '/meteora/clmm' });
+    
+    // Raydium routes
     app.register(raydiumRoutes.clmm, { prefix: '/raydium/clmm' });
     app.register(raydiumRoutes.amm, { prefix: '/raydium/amm' });
+    
     app.register(uniswapRoutes, { prefix: '/uniswap' });
-    app.register(spectrumRoutes, { prefix: '/spectrum' });
     app.register(solanaRoutes, { prefix: '/solana' });
     app.register(ethereumRoutes, { prefix: '/ethereum' });
+    app.register(spectrumRoutes, { prefix: '/spectrum' });
     app.register(ergoRoutes, { prefix: '/ergo' });
   };
 

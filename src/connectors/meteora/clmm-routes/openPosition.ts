@@ -11,7 +11,7 @@ import {
   OpenPositionRequest, 
   OpenPositionResponse, 
   OpenPositionResponseType,
-} from '../../../services/clmm-interfaces';
+} from '../../../schemas/trading-types/clmm-schema';
 import { Type, Static } from '@sinclair/typebox';
 import { httpBadRequest, httpNotFound, ERROR_MESSAGES } from '../../../services/error-handler';
 
@@ -126,7 +126,7 @@ async function openPosition(
         baseTokenAmount || 0 + 
         (tokenXSymbol === 'SOL' ? SOL_POSITION_RENT : 0)
       ), 
-      dlmmPool.tokenX.mint.decimals
+      dlmmPool.tokenX.decimal
     )
   );
   const totalYAmount = new BN(
@@ -135,7 +135,7 @@ async function openPosition(
         quoteTokenAmount || 0 + 
         (tokenYSymbol === 'SOL' ? SOL_POSITION_RENT : 0)
       ), 
-      dlmmPool.tokenY.mint.decimals
+      dlmmPool.tokenY.decimal
     )
   );
 
@@ -215,7 +215,7 @@ export const openPositionRoute: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         description: 'Open a new Meteora position',
-        tags: ['meteora'],
+        tags: ['meteora/clmm'],
         body: {
           ...OpenPositionRequest,
           properties: {
@@ -229,7 +229,7 @@ export const openPositionRoute: FastifyPluginAsync = async (fastify) => {
             slippagePct: { type: 'number', examples: [1] },
             strategyType: { 
               type: 'number', 
-              examples: [StrategyType.Spot],
+              examples: [StrategyType.SpotImBalanced],
               enum: Object.values(StrategyType).filter(x => typeof x === 'number')
             }
           }
