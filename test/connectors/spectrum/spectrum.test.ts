@@ -61,6 +61,28 @@ describe('Spectrum', () => {
     });
   });
 
+  describe('ready', () => {
+    it('Should be defined', () => {
+      const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+      expect(spectrum.ready).toBeDefined();
+    })
+    it('Should return false if not ready', () => {
+      const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+      expect(spectrum.ready()).toBe(false);
+    })
+  })
+
+  describe('gasLimitEstimate', () => {
+    it('Should be defined', () => {
+      const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+      expect(spectrum.gasLimitEstimate).toBeDefined();
+    })
+    it('Should return gasLimitEstimate correctly', () => {
+      const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+      expect(spectrum.gasLimitEstimate).toBe(150688);
+    })
+  })
+
   describe('init', () => {
     it('Should be defined', () => {
       const spectrum = Spectrum.getInstance('ergo', 'mainnet');
