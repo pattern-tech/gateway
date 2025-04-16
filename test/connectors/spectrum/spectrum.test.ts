@@ -65,23 +65,23 @@ describe('Spectrum', () => {
     it('Should be defined', () => {
       const spectrum = Spectrum.getInstance('ergo', 'mainnet');
       expect(spectrum.ready).toBeDefined();
-    })
+    });
     it('Should return false if not ready', () => {
       const spectrum = Spectrum.getInstance('ergo', 'mainnet');
       expect(spectrum.ready()).toBe(false);
-    })
-  })
+    });
+  });
 
   describe('gasLimitEstimate', () => {
     it('Should be defined', () => {
       const spectrum = Spectrum.getInstance('ergo', 'mainnet');
       expect(spectrum.gasLimitEstimate).toBeDefined();
-    })
+    });
     it('Should return gasLimitEstimate correctly', () => {
       const spectrum = Spectrum.getInstance('ergo', 'mainnet');
       expect(spectrum.gasLimitEstimate).toBe(150688);
-    })
-  })
+    });
+  });
 
   describe('init', () => {
     it('Should be defined', () => {
@@ -107,17 +107,17 @@ describe('Spectrum', () => {
   });
 
   describe('estimateTrade', () => {
+    const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+    const request: PriceRequest = {
+      chain: 'ergo',
+      network: 'mainnet',
+      connector: 'spectrum',
+      base: 'ERG',
+      quote: 'SIGUSD',
+      amount: '10',
+      side: 'SELL',
+    };
     it('should call ergo.estimate with correct parameters for SELL side', async () => {
-      const spectrum = Spectrum.getInstance('ergo', 'mainnet');
-      const request: PriceRequest = {
-        chain: 'ergo',
-        network: 'mainnet',
-        connector: 'spectrum',
-        base: 'ERG',
-        quote: 'SIGUSD',
-        amount: '10',
-        side: 'SELL',
-      };
       jest.spyOn(spectrum['ergo'], 'estimate').mockResolvedValue({
         price: '1.5',
         estimatedAmount: '15',
@@ -135,34 +135,66 @@ describe('Spectrum', () => {
         fee: '0.1',
       });
     });
+    it("Should habdle the case when side === 'BUY'", () => {
+      request['side'] = 'BUY';
+      const result = spectrum.estimateTrade(request);
+      expect(spectrum['ergo'].estimate).toHaveBeenCalledWith(
+        'SIGUSD',
+        'ERG',
+        BigNumber('10'),
+      );
+    });
   });
 
   describe('executeTrade', () => {
+    const request: any = {
+      chain: 'ergo',
+      network: 'mainnet',
+      connector: 'spectrum',
+      base: 'ERG',
+      quote: 'SIGUSD',
+      amount: '10',
+      side: 'SELL',
+      address: 'address',
+      limitPrice: '1.5',
+    };
+    const spectrum = Spectrum.getInstance('ergo', 'mainnet');
     it('Should be defined', () => {
-      const spectrum = Spectrum.getInstance('ergo', 'mainnet');
       expect(spectrum.executeTrade).toBeDefined();
     });
     it('Should call ergo.execute with correct parameters', async () => {
-      const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+      // const spectrum = Spectrum.getInstance('ergo', 'mainnet');
       jest
         .spyOn(spectrum['ergo'], 'getAccountFromAddress')
         .mockResolvedValue('account' as any);
       jest.spyOn(spectrum['ergo'], 'swap').mockResolvedValue({} as any);
-      const request: any = {
-        chain: 'ergo',
-        network: 'mainnet',
-        connector: 'spectrum',
-        base: 'ERG',
-        quote: 'SIGUSD',
-        amount: '10',
-        side: 'SELL',
-        address: 'address',
-        limitPrice: '1.5',
-      };
       const result = await spectrum.executeTrade(request);
       expect(result).toEqual({});
-      expect(spectrum['ergo'].swap).toHaveBeenCalled();
-      expect(spectrum['ergo'].getAccountFromAddress).toHaveBeenCalledWith('address')
+      expect(spectrum['ergo'].swap).toHaveBeenCalledWith('account',
+        'ERG',
+        'SIGUSD',
+        BigNumber('10'),
+        'address',
+        'address',
+        String(request.limitPrice),);
+      expect(spectrum['ergo'].getAccountFromAddress).toHaveBeenCalledWith(
+        'address',
+      );
+    });
+    it("Should habdle the case when side === 'BUY'", async () => {
+      request['side'] = 'BUY';
+      jest.spyOn(spectrum['ergo'], 'swap').mockResolvedValue({} as any);
+      const result = await spectrum.executeTrade(request);
+      expect(result).toEqual({});
+      expect(spectrum['ergo'].swap).toHaveBeenCalledWith(
+        'account',
+        'SIGUSD',
+        'ERG',
+        BigNumber('10'),
+        'address',
+        'address',
+        String(request.limitPrice),
+      );
     });
   });
 });
