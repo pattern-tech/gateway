@@ -8,8 +8,7 @@ import { Spectrum } from '../../../src/connectors/spectrum/spectrum';
 describe('spectrumRoutes', () => {
   let fastify: FastifyInstance;
   let ergo = new Ergo('mainnet');
-  let ergoController = new ErgoController();
-  let spectrum = Spectrum.getInstance('ergo', 'mainnet')
+  let spectrum = Spectrum.getInstance('ergo', 'mainnet');
 
   const mockStatus = { height: 1234, network: 'mainnet' };
   const mockChainInstance = ergo;
@@ -64,7 +63,7 @@ describe('spectrumRoutes', () => {
   describe('POST /spectrum/price', () => {
     const mockPriceResponse = {
       price: '100.50',
-      base: 'SOGUSD',
+      base: 'SIGUSD',
       quote: 'ERG',
       amount: '10',
       rawAmount: '5',
@@ -77,8 +76,8 @@ describe('spectrumRoutes', () => {
       gasLimit: 200000000,
       gasCost: '10000',
       gasWanted: '20000',
-    }; 
-  
+    };
+
     const mockPriceRequest = {
       chain: 'ergo',
       network: 'mainnet',
@@ -86,23 +85,27 @@ describe('spectrumRoutes', () => {
       quote: 'ERG',
       base: 'SIGUSD',
       amount: '10',
-      side: 'BUY'
+      side: 'BUY',
     };
-  
+
     it('should return price quote for valid request', async () => {
       jest.spyOn(validators, 'validatePriceRequest').mockReturnValue;
-      jest.spyOn(spectrum, 'estimateTrade').mockResolvedValue(mockPriceResponse);
-  
+      jest
+        .spyOn(spectrum, 'estimateTrade')
+        .mockResolvedValue(mockPriceResponse);
+
       const response = await fastify.inject({
         method: 'POST',
         url: '/price',
         payload: mockPriceRequest,
       });
-  
+
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual(mockPriceResponse);
       expect(spectrum.estimateTrade).toHaveBeenCalledWith(mockPriceRequest);
-      expect(validators.validatePriceRequest).toHaveBeenCalledWith(mockPriceRequest);
+      expect(validators.validatePriceRequest).toHaveBeenCalledWith(
+        mockPriceRequest,
+      );
     });
 
     it('should return 400 for invalid price request', async () => {
@@ -119,49 +122,66 @@ describe('spectrumRoutes', () => {
       expect(response.statusCode).toBe(400);
       expect(response.json()).toHaveProperty('error');
     });
-    // });
+  });
 
-    // describe('POST /spectrum/trade', () => {
-    //   it('should execute trade for valid request', async () => {
-    //     const mockTradeRequest = {
-    //       chain: 'ergo',
-    //       network: 'mainnet',
-    //       tokenId: 'token123',
-    //       amount: 100,
-    //       address: 'address123',
-    //     };
-    //     const mockTradeResponse = { txId: 'tx123', status: 'pending' };
-    //     const mockConnectorInstance = { executeTrade: jest.fn().mockResolvedValue(mockTradeResponse) };
+  describe('POST /spectrum/trade', () => {
+    it('should execute trade for valid request', async () => {
+      const mockTradeRequest = {
+        chain: 'ergo',
+        connector: 'spectrum',
+        quote: 'SIGUSD',
+        base: 'ERG',
+        network: 'mainnet',
+        tokenId: 'token123',
+        amount: '10',
+        address: 'address123',
+        side: 'BUY',
+      };
+      const mockTradeResponse = {
+        network: 'mainnet',
+        timestamp: 213456,
+        latency: 1,
+        base: 'ERG',
+        quote: 'SIGUSD',
+        amount: '10',
+        rawAmount: '5',
+        price: '10.5',
+        gasPrice: 1000000,
+        gasPriceToken: 'ERG',
+        gasLimit: 20000,
+        gasCost: 'gasCost',
+        txHash: 'txHash',
+      };
+      jest.spyOn(spectrum, 'executeTrade').mockResolvedValue(mockTradeResponse),
 
-    //     (validateTradeRequest as jest.Mock).mockReturnValue();
-    //     (Spectrum.getInstance as jest.Mock).mockReturnValue(mockConnectorInstance);
+      jest.spyOn(validators, 'validateTradeRequest').mockReturnValue();
 
-    //     const response = await fastify.inject({
-    //       method: 'POST',
-    //       url: '/spectrum/trade',
-    //       payload: mockTradeRequest,
-    //     });
+      const response = await fastify.inject({
+        method: 'POST',
+        url: '/trade',
+        payload: mockTradeRequest,
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual(mockTradeResponse);
+      expect(validators.validateTradeRequest).toHaveBeenCalledWith(mockTradeRequest);
+      expect(spectrum.executeTrade).toHaveBeenCalledWith(
+        mockTradeRequest,
+      );
+    });
 
-    //     expect(response.statusCode).toBe(200);
-    //     expect(response.json()).toEqual(mockTradeResponse);
-    //     expect(validateTradeRequest).toHaveBeenCalledWith(mockTradeRequest);
-    //     expect(Spectrum.getInstance).toHaveBeenCalledWith('ergo', 'mainnet');
-    //     expect(mockConnectorInstance.executeTrade).toHaveBeenCalledWith(mockTradeRequest);
-    //   });
+    it('should return 400 for invalid trade request', async () => {
+      jest.spyOn(validators, 'validateTradeRequest').mockImplementation(() => {
+        throw new Error('Invalid trade request');
+      });
 
-    //   it('should return 400 for invalid trade request', async () => {
-    //     (validateTradeRequest as jest.Mock).mockImplementation(() => {
-    //       throw new Error('Invalid trade request');
-    //     });
+      const response = await fastify.inject({
+        method: 'POST',
+        url: '/trade',
+        payload: { chain: 'ergo' },
+      });
 
-    //     const response = await fastify.inject({
-    //       method: 'POST',
-    //       url: '/spectrum/trade',
-    //       payload: { chain: 'ergo' },
-    //     });
-
-    //     expect(response.statusCode).toBe(400);
-    //     expect(response.json()).toHaveProperty('error');
-    //   });
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toHaveProperty('error');
+    });
   });
 });
