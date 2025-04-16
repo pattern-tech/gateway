@@ -20,7 +20,7 @@ import {
   ErgoAsset,
   ErgoBox,
 } from '../../../src/chains/ergo/interfaces/ergo.interface';
-import LRUCache from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 import fse from 'fs-extra';
 import { makeNativePools } from '@patternglobal/ergo-dex-sdk';
 import { BigNumber } from 'bignumber.js';

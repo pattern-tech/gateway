@@ -49,6 +49,7 @@ describe('getErgoConfig', () => {
         explorerDEXURL: 'ergo.networks.mainnet.explorerDEXURL',
         timeOut: 1000,
         networkPrefix: NetworkPrefix.Mainnet,
+        nativeCurrencySymbol: "ERG",
         minTxFee: 2000,
         maxLRUCacheInstances: 10,
         utxosLimit: 100,
@@ -60,7 +61,7 @@ describe('getErgoConfig', () => {
       },
     });
     // Assert: Verify that the get method was called exactly 12 times with the expected arguments
-    expect(configManager.get).toHaveBeenCalledTimes(12);
+    expect(configManager.get).toHaveBeenCalledTimes(13);
     expect(configManager.get).toHaveBeenCalledWith(
       'ergo.networks.mainnet.nodeURL',
     );
@@ -96,6 +97,9 @@ describe('getErgoConfig', () => {
     );
     expect(configManager.get).toHaveBeenCalledWith(
       'ergo.networks.mainnet.minBoxValue',
+    );
+    expect(configManager.get).toHaveBeenCalledWith(
+      'ergo.networks.mainnet.nativeCurrencySymbol',
     );
   });
 
@@ -151,7 +155,7 @@ describe('getErgoConfig', () => {
       },
     });
     // Assert: Verify that the get method was called exactly 12 times with the expected arguments
-    expect(configManager.get).toHaveBeenCalledTimes(12);
+    expect(configManager.get).toHaveBeenCalledTimes(13);
     expect(configManager.get).toHaveBeenCalledWith(
       'ergo.networks.testnet.nodeURL',
     );
@@ -187,6 +191,9 @@ describe('getErgoConfig', () => {
     );
     expect(configManager.get).toHaveBeenCalledWith(
       'ergo.networks.testnet.minBoxValue',
+    );
+    expect(configManager.get).toHaveBeenCalledWith(
+      'ergo.networks.testnet.nativeCurrencySymbol',
     );
   });
 });
