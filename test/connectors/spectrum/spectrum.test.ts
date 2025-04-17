@@ -124,12 +124,21 @@ describe('Spectrum', () => {
         fee: '0.1',
       });
     });
-    it("Should habdle the case when side === 'BUY'", () => {
+    it("Should habdle the case when side === 'BUY'", async() => {
       request['side'] = 'BUY';
-      const result = spectrum.estimateTrade(request);
+      await spectrum.estimateTrade(request);
       expect(spectrum['ergo'].estimate).toHaveBeenCalledWith(
         'SIGUSD',
         'ERG',
+        BigNumber('10'),
+      );
+    });
+    it("Should habdle the case when side is not set as SELL or BUY", async () => {
+      request['side'] = 'someOtherValue' as any;
+      await spectrum.estimateTrade(request);
+      expect(spectrum['ergo'].estimate).toHaveBeenCalledWith(
+        'ERG',
+        'SIGUSD',
         BigNumber('10'),
       );
     });
@@ -149,8 +158,8 @@ describe('Spectrum', () => {
     it('Should be defined', () => {
       expect(spectrum.executeTrade).toBeDefined();
     });
-    it('Should call ergo.execute with correct parameters', async () => {
-      
+    it("Should call ergo.execute with correct parameters when side === 'SELL'", async () => {
+      mockTradeRequest['side'] = 'SELL';
       jest
         .spyOn(spectrum['ergo'], 'getAccountFromAddress')
         .mockResolvedValue('account' as any);
@@ -159,16 +168,17 @@ describe('Spectrum', () => {
       expect(result).toEqual({});
       expect(spectrum['ergo'].swap).toHaveBeenCalledWith(
         'account',
-        "SIGUSD",
         "ERG",
+        "SIGUSD",
         BigNumber('10'),
         'walletAddress123',
         'walletAddress123',
-        '10000');
+        1);
       expect(spectrum['ergo'].getAccountFromAddress).toHaveBeenCalledWith(
         'walletAddress123',
       );
     });
+    
     it("Should habdle the case when side === 'BUY'", async () => {
       mockTradeRequest['side'] = 'BUY';
       jest.spyOn(spectrum['ergo'], 'swap').mockResolvedValue({} as any);
@@ -181,7 +191,7 @@ describe('Spectrum', () => {
         BigNumber('10'),
         'walletAddress123',
         'walletAddress123',
-        '10000');
+        1);
     });
   });
 });
