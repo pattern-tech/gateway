@@ -24,6 +24,9 @@ import {
 } from '../chain.requests';
 import { ErgoBoxAsset } from './interfaces/ergo.interface';
 import { AllowancesRequest, AllowancesResponse } from '../chain.requests';
+import { EstimateGasRequestType } from '../../schemas/chain-schema';
+import { EstimateGasResponse } from '../../connectors/connector.requests';
+import { getErgoConfig } from './ergo.config';
 
 export class ErgoController {
   static async pool(ergo: Ergo, req: PoolRequest): Promise<PoolResponse> {
@@ -199,6 +202,22 @@ export class ErgoController {
   ): Promise<NonceResponse | void> {
     return {
       nonce: (await ergo.getCurrentEpoch()).height,
+    };
+  }
+
+  static async gas_cost(
+    ergo: Ergo,
+    _request: EstimateGasRequestType,
+  ): Promise<EstimateGasResponse | null> {
+    let ergo_config = getErgoConfig(_request.network);
+
+    return {
+      network: _request.network,
+      timestamp: await ergo.getCurrentBlockTimestamp(),
+      gasPrice: ergo.calculateGas(ergo_config.network.minTxFee),
+      gasPriceToken: 'ERG',
+      gasLimit: 0,
+      gasCost: ergo.calculateGas(ergo_config.network.minTxFee).toString(),
     };
   }
 }

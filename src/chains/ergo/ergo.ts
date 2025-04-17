@@ -38,7 +38,10 @@ import {
 } from '@patternglobal/ergo-sdk';
 import crypto from 'crypto';
 import { NativeExFeeType } from '@patternglobal/ergo-dex-sdk/build/main/types';
-import { EpochParams, NetworkContext } from '@patternglobal/ergo-sdk/build/main/entities/networkContext';
+import {
+  EpochParams,
+  NetworkContext,
+} from '@patternglobal/ergo-sdk/build/main/entities/networkContext';
 import { ErgoNetwork } from './types/ergo.type';
 import { getBaseInputParameters, getInputs, getTxContext } from './ergo.util';
 import { WalletProver } from './wallet-prover.service';
@@ -51,7 +54,10 @@ import {
   SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_CODE,
   SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_MESSAGE,
 } from '../../services/error-handler';
-import { PriceResponse, TradeResponse } from '../../connectors/connector.requests';
+import {
+  PriceResponse,
+  TradeResponse,
+} from '../../connectors/connector.requests';
 
 /**
  * Extended AmmPool class with additional properties and methods
@@ -277,7 +283,9 @@ export class Ergo {
    */
   public getAccountFromSecretKey(secret: string): ErgoAccount {
     const sks = new SecretKeys();
-    const secretKey = SecretKey.dlog_from_bytes(new Uint8Array(Buffer.from(secret, 'hex')));
+    const secretKey = SecretKey.dlog_from_bytes(
+      new Uint8Array(Buffer.from(secret, 'hex')),
+    );
     const address = secretKey.get_address().to_base58(this._networkPrefix);
 
     sks.add(secretKey);
@@ -1014,6 +1022,19 @@ export class Ergo {
   }
 
   /**
+   * Gets the current block timestamp
+   * @param {NetworkContext} networkContext - The network context
+   * @returns {Promise<number>}
+   */
+  public async getCurrentBlockTimestamp(): Promise<number> {
+    let networkContext = await this._explorer.getNetworkContext();
+    const blockInfo = await this._node.getBlockInfo(
+      networkContext.height.toString(),
+    );
+    return blockInfo.header.timestamp;
+  }
+
+  /**
    * Submits a transaction
    * @param {ErgoAccount} account - The account submitting the transaction
    * @param {any} tx - The transaction to submit
@@ -1173,7 +1194,7 @@ export class Ergo {
    * @param {number} minTxFee - The minimum transaction fee
    * @returns {number}
    */
-  private calculateGas(minTxFee: number): number {
+  public calculateGas(minTxFee: number): number {
     return BigNumber(minTxFee).div(BigNumber(10).pow(9)).toNumber();
   }
 
@@ -1223,18 +1244,18 @@ export class Ergo {
   }
 
   /**
-   * Gets explorer url 
+   * Gets explorer url
    * @returns {string} The Explorer url
    */
   public getExplorerUrl(): string {
-    return this._explorer.uri
+    return this._explorer.uri;
   }
 
   /**
-   * Gets current epoch 
+   * Gets current epoch
    * @returns {string} The Explorer url
    */
   public async getCurrentEpoch(): Promise<EpochParams> {
-    return (await this._explorer.getNetworkContext()).epoch
+    return (await this._explorer.getNetworkContext()).epoch;
   }
 }
