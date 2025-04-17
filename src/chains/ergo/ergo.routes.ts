@@ -12,6 +12,8 @@ import {
   PollRequest
 } from '../chain.requests';
 import { ErgoController } from './ergo.controllers';
+import { EstimateGasRequestSchema, EstimateGasRequestType } from '../../schemas/chain-schema';
+import { EstimateGasResponse, EstimateGasResponseSchema } from '../../connectors/connector.requests';
 
 declare module 'fastify' {
   interface FastifySchema {
@@ -182,6 +184,43 @@ export const ergoRoutes: FastifyPluginAsync = async (fastify) => {
       return await ErgoController.allowances(chain as Ergo, request.body);
     }
   );
+
+  fastify.post<{
+      Body: EstimateGasRequestType;
+      Reply: EstimateGasResponse;
+    }>(
+      '/estimate-gas',
+      {
+        schema: {
+          description: 'Estimate gas prices for Ergo transactions',
+          tags: ['ergo'],
+          body: {
+            ...EstimateGasRequestSchema,
+            properties: {
+              ...EstimateGasRequestSchema.properties,
+              chain: { type: 'string', enum: ['ergo'], examples: ['ergo'] },
+              network: { type: 'string', examples: ['mainnet-beta', 'devnet'] },
+              gasLimit: { type: 'number', examples: [1000000] }
+            }
+          },
+          response: {
+            200: EstimateGasResponseSchema
+          }
+        }
+      },
+      async (request) => {
+        const chain = await getInitializedChain<Ergo>(
+          'ergo',
+          request.body.network
+        );        
+        // Validate chain is ergo
+        if (request.body.chain.toLocaleLowerCase() !== 'ergo') {
+          throw fastify.httpErrors.badRequest('Invalid chain specified. Only "solana" is supported for this endpoint.');
+        }
+        
+        return await ErgoController.gas_cost(chain as Ergo, request.body);
+      }
+    );
 };
 
 export default ergoRoutes;

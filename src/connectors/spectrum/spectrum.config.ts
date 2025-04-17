@@ -5,8 +5,8 @@ const configManager = ConfigManagerV2.getInstance();
 
 export namespace SpectrumConfig {
   export const config: NetworkConfig = {
-    allowedSlippage: configManager.get('ergo.allowedSlippage'),
-    gasLimitEstimate: configManager.get('ergo.gasLimitEstimate'),
+    allowedSlippage: configManager.get('spectrum.allowedSlippage'),
+    gasLimitEstimate: configManager.get('spectrum.gasLimitEstimate'),
     tradingTypes: ['AMM'],
     chainType: 'ERGO',
     availableNetworks: [{ chain: 'ergo', networks: ['mainnet'] }],
