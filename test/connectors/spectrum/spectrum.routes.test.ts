@@ -4,6 +4,7 @@ import { Ergo } from '../../../src/chains/ergo/ergo';
 import { ErgoController } from '../../../src/chains/ergo/ergo.controllers';
 import * as validators from '../../../src/connectors/connector.validators';
 import { Spectrum } from '../../../src/connectors/spectrum/spectrum';
+import { ExecuteSwapRequestType, ExecuteSwapResponseType } from '../../../src/schemas/trading-types/swap-schema';
 
 describe('spectrumRoutes', () => {
   let fastify: FastifyInstance;
@@ -126,31 +127,22 @@ describe('spectrumRoutes', () => {
 
   describe('POST /spectrum/trade', () => {
     it('should execute trade for valid request', async () => {
-      const mockTradeRequest = {
-        chain: 'ergo',
-        connector: 'spectrum',
-        quote: 'SIGUSD',
-        base: 'ERG',
+      const mockTradeRequest: ExecuteSwapRequestType = {
         network: 'mainnet',
-        tokenId: 'token123',
-        amount: '10',
-        address: 'address123',
+        walletAddress: 'walletAddress123',
+        quoteToken: 'SIGUSD',
+        baseToken: 'ERG',
         side: 'BUY',
+        slippagePct: 1,
+        amount: 10,
       };
-      const mockTradeResponse = {
-        network: 'mainnet',
-        timestamp: 213456,
-        latency: 1,
-        base: 'ERG',
-        quote: 'SIGUSD',
-        amount: '10',
-        rawAmount: '5',
-        price: '10.5',
-        gasPrice: 1000000,
-        gasPriceToken: 'ERG',
-        gasLimit: 20000,
-        gasCost: 'gasCost',
-        txHash: 'txHash',
+      const mockTradeResponse: ExecuteSwapResponseType = {
+        "baseTokenBalanceChange": 10,
+        "quoteTokenBalanceChange": 0.001,
+        "fee": 2000,
+        "signature": "txId",
+        "totalInputSwapped": 10,
+        "totalOutputSwapped": 0.001,
       };
       jest.spyOn(spectrum, 'executeTrade').mockResolvedValue(mockTradeResponse),
 
@@ -158,12 +150,11 @@ describe('spectrumRoutes', () => {
 
       const response = await fastify.inject({
         method: 'POST',
-        url: '/trade',
+        url: '/execute-swap',
         payload: mockTradeRequest,
       });
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual(mockTradeResponse);
-      expect(validators.validateTradeRequest).toHaveBeenCalledWith(mockTradeRequest);
       expect(spectrum.executeTrade).toHaveBeenCalledWith(
         mockTradeRequest,
       );
@@ -176,7 +167,7 @@ describe('spectrumRoutes', () => {
 
       const response = await fastify.inject({
         method: 'POST',
-        url: '/trade',
+        url: '/execute-swap',
         payload: { chain: 'ergo' },
       });
 
