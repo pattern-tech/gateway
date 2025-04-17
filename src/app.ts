@@ -26,7 +26,7 @@ import { uniswapRoutes } from './connectors/uniswap/uniswap.routes';
 import { raydiumRoutes } from './connectors/raydium/raydium.routes';
 import { ergoRoutes } from './chains/ergo/ergo.routes';
 import { spectrumRoutes } from './connectors/spectrum/spectrum.routes';
-import { spectrumQuoteSwapRoute } from './connectors/spectrum/amm-routes/quoteSwap';
+
 
 // Change version for each release
 const GATEWAY_VERSION = '2.4.0';
@@ -178,7 +178,6 @@ const configureGatewayServer = () => {
     app.register(solanaRoutes, { prefix: '/solana' });
     app.register(ethereumRoutes, { prefix: '/ethereum' });
     app.register(spectrumRoutes, { prefix: '/spectrum' });
-    app.register(spectrumQuoteSwapRoute, { prefix: '/spectrum' });
     app.register(ergoRoutes, { prefix: '/ergo' });
   };
 
