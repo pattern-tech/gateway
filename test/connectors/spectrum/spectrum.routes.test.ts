@@ -4,7 +4,15 @@ import { Ergo } from '../../../src/chains/ergo/ergo';
 import { ErgoController } from '../../../src/chains/ergo/ergo.controllers';
 import * as validators from '../../../src/connectors/connector.validators';
 import { Spectrum } from '../../../src/connectors/spectrum/spectrum';
-import { ExecuteSwapRequestType, ExecuteSwapResponseType } from '../../../src/schemas/trading-types/swap-schema';
+import {
+  ExecuteSwapRequestType,
+  ExecuteSwapResponseType,
+  GetSwapQuoteRequestType,
+} from '../../../src/schemas/trading-types/swap-schema';
+import * as conf  from '../../../src/chains/ergo/ergo.config';
+import { logger } from '../../../src/services/logger';
+import { PriceResponse } from '../../../src/connectors/connector.requests';
+import { SpectrumConfig } from '../../../src/connectors/spectrum/spectrum.config';
 
 describe('spectrumRoutes', () => {
   let fastify: FastifyInstance;
@@ -137,16 +145,15 @@ describe('spectrumRoutes', () => {
         amount: 10,
       };
       const mockTradeResponse: ExecuteSwapResponseType = {
-        "baseTokenBalanceChange": 10,
-        "quoteTokenBalanceChange": 0.001,
-        "fee": 2000,
-        "signature": "txId",
-        "totalInputSwapped": 10,
-        "totalOutputSwapped": 0.001,
+        baseTokenBalanceChange: 10,
+        quoteTokenBalanceChange: 0.001,
+        fee: 2000,
+        signature: 'txId',
+        totalInputSwapped: 10,
+        totalOutputSwapped: 0.001,
       };
       jest.spyOn(spectrum, 'executeTrade').mockResolvedValue(mockTradeResponse),
-
-      jest.spyOn(validators, 'validateTradeRequest').mockReturnValue();
+        jest.spyOn(validators, 'validateTradeRequest').mockReturnValue();
 
       const response = await fastify.inject({
         method: 'POST',
@@ -155,9 +162,7 @@ describe('spectrumRoutes', () => {
       });
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual(mockTradeResponse);
-      expect(spectrum.executeTrade).toHaveBeenCalledWith(
-        mockTradeRequest,
-      );
+      expect(spectrum.executeTrade).toHaveBeenCalledWith(mockTradeRequest);
     });
 
     it('should return 400 for invalid trade request', async () => {
@@ -173,6 +178,92 @@ describe('spectrumRoutes', () => {
 
       expect(response.statusCode).toBe(400);
       expect(response.json()).toHaveProperty('error');
+    });
+  });
+
+  describe('GET /quote-swap', () => {
+    it('should return swap quote for valid request', async () => {
+      const mockQuoteRequest: GetSwapQuoteRequestType = {
+        network: 'mainnet',
+        baseToken: 'ERG',
+        quoteToken: 'SIGUSD',
+        amount: 10,
+        side: 'SELL',
+      };
+
+      const mockEstimateResponse: PriceResponse = {
+        base: 'ERG',
+        quote: 'SIGUSD',
+        amount: '10',
+        rawAmount: '5',
+        expectedAmount: '8',
+        price: '2',
+        network: 'mainnet',
+        timestamp: 123456,
+        latency: 3,
+        gasPrice: 20000000,
+        gasPriceToken: 'ERG',
+        gasLimit: 200000000,
+        gasCost: '20000',
+      };
+      const mockConfig = { network: { minTxFee: 1000000 } };
+      jest.spyOn(spectrum, 'estimateTrade').mockResolvedValue(mockEstimateResponse);
+      jest.spyOn(conf, 'getErgoConfig').mockReturnValue(mockConfig as any) ;
+      jest.spyOn(logger, 'error').mockImplementation();
+      jest.spyOn(Ergo, 'getInstance').mockReturnValue(mockChainInstance);
+      jest.spyOn(Spectrum, 'getInstance').mockReturnValue(spectrum);
+      jest.spyOn(mockChainInstance, 'calculateGas').mockReturnValue(20000000);
+
+      const response = await fastify.inject({
+        method: 'GET',
+        url: '/quote-swap',
+        query: {
+          network: 'mainnet',
+          baseToken: 'ERG',
+          quoteToken: 'SIGUSD',
+          amount: '10',
+          side: 'SELL',
+         }
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({
+        estimatedAmountIn: 10,
+        estimatedAmountOut: 8,
+        minAmountOut: 8,
+        maxAmountIn: 10,
+        baseTokenBalanceChange: -10,
+        quoteTokenBalanceChange: 10,
+        price: 2,
+        gasPrice: 20000000,
+        gasLimit: SpectrumConfig.config.gasLimitEstimate,
+        gasCost: 20000000,
+      });
+    });
+
+    it('should return 500 for non-mainnet network', async () => {
+      const mockQuoteRequest: GetSwapQuoteRequestType = {
+        network: 'non-mainnet',
+        baseToken: 'ERG',
+        quoteToken: 'SIGUSD',
+        amount: 10,
+        side: 'SELL',
+      };
+      jest.spyOn(logger, 'error').mockRejectedValue;
+      const response = await fastify.inject({
+        method: 'GET',
+        url: '/quote-swap',
+        query: {
+          network: 'non-mainnet',
+          baseToken: 'ERG',
+          quoteToken: 'SIGUSD',
+          amount: '10',
+          side: 'SELL',
+         }
+      });
+      expect(response.statusCode).toBe(500);
+      expect(logger.error).toHaveBeenCalledWith(
+        `Wrong network, network non-mainnet is not supported`,
+      );
     });
   });
 });
