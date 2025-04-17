@@ -41,6 +41,7 @@ export class ErgoController {
     const tx = await ergo.getTx(req.txHash);
     if (!tx)
       return {
+        ergo_tx_full: null,
         id: '',
         inputs: [],
         dataInputs: [],
@@ -59,6 +60,7 @@ export class ErgoController {
       };
     return {
       ...tx,
+      ergo_tx_full: tx,
       currentBlock: Number(tx?.inclusionHeight),
       txBlock: Number(tx?.inclusionHeight),
       txHash: tx?.id,
@@ -196,7 +198,7 @@ export class ErgoController {
     _request: NonceRequest,
   ): Promise<NonceResponse | void> {
     return {
-      nonce: (await ergo.getCurrentEpoch()).height
+      nonce: (await ergo.getCurrentEpoch()).height,
     };
   }
 }
