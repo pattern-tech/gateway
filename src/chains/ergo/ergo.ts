@@ -654,20 +654,20 @@ export class Ergo {
       xDecimals,
       yDecimals,
     );
-    if (
-      (sell && BigNumber(priceLimit).gt(BigNumber(realPrice))) ||
-      (!sell && BigNumber(priceLimit).lt(BigNumber(realPrice)))
-    ) {
-      console.error('Swap price exceeded limit price.');
-      throw new HttpException(
-        500,
-        SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_MESSAGE(
-          BigNumber(realPrice).toString(),
-          BigNumber(priceLimit).toString(),
-        ),
-        SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_CODE,
-      );
-    }
+    // if (
+    //   (sell && BigNumber(priceLimit).gt(BigNumber(realPrice))) ||
+    //   (!sell && BigNumber(priceLimit).lt(BigNumber(realPrice)))
+    // ) {
+    //   console.error('Swap price exceeded limit price.');
+    //   throw new HttpException(
+    //     500,
+    //     SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_MESSAGE(
+    //       BigNumber(realPrice).toString(),
+    //       BigNumber(priceLimit).toString(),
+    //     ),
+    //     SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_CODE,
+    //   );
+    // }
 
     await this.submitTransaction(account, tx);
 
