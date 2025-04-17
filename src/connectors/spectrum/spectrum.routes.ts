@@ -84,7 +84,7 @@ export const spectrumRoutes: FastifyPluginAsync = async (fastify) => {
     '/execute-swap',
     {
       schema: {
-        description: 'Execute Jupiter swap',
+        description: 'Execute Spectrum swap',
         tags: ['spectrum'],
         body: {
           ...ExecuteSwapRequest,

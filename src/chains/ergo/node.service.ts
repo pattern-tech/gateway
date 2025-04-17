@@ -7,6 +7,7 @@ import { NodeErgoBoxResponse } from './types/node.type';
 import {
   BlockHeaders,
   ErgoStateContext,
+  Parameters,
   PreHeader,
 } from 'ergo-lib-wasm-nodejs';
 import { ErgoTxFull } from './interfaces/ergo.interface';
@@ -92,7 +93,10 @@ export class NodeService {
     const pre_header = PreHeader.from_block_header(
       blockHeaders.get(blockHeaders.len() - 1),
     );
-    return new ErgoStateContext(pre_header, blockHeaders, {} as any); // TODO: fix third input 
+    
+    let params : Parameters = Parameters.default_parameters();
+
+    return new ErgoStateContext(pre_header, blockHeaders, params);
   }
 
   async postTransaction(tx: any): Promise<string> {

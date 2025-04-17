@@ -73,5 +73,6 @@ export interface BaseInputParameters {
 }
 
 export interface ErgoTxFull extends ErgoTx {
+  fee?: number;
   inclusionHeight: string;
 }

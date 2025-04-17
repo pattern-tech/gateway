@@ -61,6 +61,7 @@ export class ErgoController {
         tokenId: 0,
         fee: 0,
       };
+    tx.fee = 0;
     return {
       ...tx,
       ergo_tx_full: tx,
