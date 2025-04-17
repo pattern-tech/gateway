@@ -110,7 +110,7 @@ export class Spectrum {
         BigNumber(req.amount),
         req.walletAddress,
         req.walletAddress,
-        String(0),
+        req.slippagePct,
       );
     else if (req.side === 'BUY')
       return this.ergo.swap(
@@ -120,7 +120,7 @@ export class Spectrum {
         BigNumber(req.amount),
         req.walletAddress,
         req.walletAddress,
-        String(10000),
+        req.slippagePct,
       );
     else
       return this.ergo.swap(
@@ -130,7 +130,7 @@ export class Spectrum {
         BigNumber(req.amount),
         req.walletAddress,
         req.walletAddress,
-        String(0 ? req.side=="SELL" : 10000),
+        req.slippagePct,
       );
   }
 }

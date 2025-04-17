@@ -588,25 +588,27 @@ export class Ergo {
     value: BigNumber,
     output_address: string,
     return_address: string,
-    priceLimit: string,
+    slippage?: number,
   ): Promise<ExecuteSwapResponseType> {
+    
+
     const config = getErgoConfig(this.network);
-    const slippage = config.network.defaultSlippage;
+    const _slippage = slippage || config.network.defaultSlippage;
     const { realBaseToken, realQuoteToken, pool } = await this.findBestPool(
       baseToken,
       quoteToken,
       value,
-      slippage,
+      _slippage,
     );
     const { sell, amount, from, to, minOutput } = this.calculateSwapParameters(
       pool,
       realBaseToken,
       value,
-      slippage,
+      _slippage,
     );
     const { baseInput, baseInputAmount } = getBaseInputParameters(pool, {
       inputAmount: from,
-      slippage: slippage || config.network.defaultSlippage,
+      slippage: _slippage || config.network.defaultSlippage,
     });
 
     const networkContext = await this._explorer.getNetworkContext();
@@ -654,20 +656,6 @@ export class Ergo {
       xDecimals,
       yDecimals,
     );
-    // if (
-    //   (sell && BigNumber(priceLimit).gt(BigNumber(realPrice))) ||
-    //   (!sell && BigNumber(priceLimit).lt(BigNumber(realPrice)))
-    // ) {
-    //   console.error('Swap price exceeded limit price.');
-    //   throw new HttpException(
-    //     500,
-    //     SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_MESSAGE(
-    //       BigNumber(realPrice).toString(),
-    //       BigNumber(priceLimit).toString(),
-    //     ),
-    //     SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_CODE,
-    //   );
-    // }
 
     await this.submitTransaction(account, tx);
 
