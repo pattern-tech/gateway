@@ -113,7 +113,7 @@ export class ErgoController {
     }
 
     return {
-      assets: ergo.storedAssetList,
+      tokens: ergo.storedAssetList,
     };
   }
 

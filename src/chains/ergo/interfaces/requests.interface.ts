@@ -33,7 +33,7 @@ export interface BalanceRequest extends NetworkSelectionRequest {
 }
 
 export interface AssetsResponse {
-  assets: ErgoAsset[];
+  tokens: ErgoAsset[];
 }
 
 export interface TransferRequest {
