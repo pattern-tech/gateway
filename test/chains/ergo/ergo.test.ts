@@ -1122,7 +1122,7 @@ describe('Ergo', () => {
     const value: BigNumber = BigNumber(10);
     const output_address: string = 'output_address';
     const return_address: string = 'return_address';
-    const slippage: number = 10;
+    const slippage: number = 1;
     beforeEach(() => {
       jest.spyOn(ergo, 'getAddressUnspentBoxes').mockResolvedValue([]);
       jest.spyOn(ergo, 'storedAssetList', 'get').mockReturnValue([
@@ -1296,7 +1296,7 @@ describe('Ergo', () => {
           value,
           output_address,
           return_address,
-          '18',
+          1,
         ),
       ).rejects.toThrow(`Pool not found for ${baseToken} and ${quoteToken}`);
       expect(ergo.getPoolByToken).toHaveBeenCalledWith(baseToken, quoteToken);
@@ -1321,7 +1321,7 @@ describe('Ergo', () => {
           value,
           output_address,
           return_address,
-          '18',
+          1,
         ),
       ).rejects.toThrow(`Pool not found for ${baseToken} and ${quoteToken}`);
       expect(ergo.getPoolByToken).toHaveBeenCalledWith(baseToken, quoteToken);
@@ -1339,7 +1339,7 @@ describe('Ergo', () => {
           value,
           output_address,
           return_address,
-          '18',
+          1,
         ),
       ).rejects.toThrow(
         `${value.multipliedBy(
@@ -1362,7 +1362,7 @@ describe('Ergo', () => {
           value,
           output_address,
           return_address,
-          '18',
+          1,
         ),
       ).rejects.toThrow(
         `${value.multipliedBy(
@@ -1380,7 +1380,7 @@ describe('Ergo', () => {
           value,
           output_address,
           return_address,
-          '18',
+          1,
         ),
       ).rejects.toThrow('Error in swap vars!');
       expect(ergo.getAddressUnspentBoxes).toHaveBeenCalledWith('address');
@@ -1404,7 +1404,7 @@ describe('Ergo', () => {
             slippage,
           ).amount,
         },
-        slippage: slippage || 10,
+        slippage: 1,
       });
     });
 
@@ -1418,7 +1418,7 @@ describe('Ergo', () => {
           value,
           output_address,
           return_address,
-          '18',
+          1,
         ),
       ).rejects.toThrow(`output_address is not defined.`);
       expect(ergo.getAddressUnspentBoxes).toHaveBeenCalledWith('address');
@@ -1441,7 +1441,7 @@ describe('Ergo', () => {
         value,
         output_address,
         return_address,
-        '1800000',
+        1,
       );
       expect(result).toEqual({
         "baseTokenBalanceChange": 10,
@@ -1473,7 +1473,7 @@ describe('Ergo', () => {
         value,
         output_address,
         return_address,
-        '18',
+        1,
       );
       expect(result).toEqual({
         "baseTokenBalanceChange": 10,
