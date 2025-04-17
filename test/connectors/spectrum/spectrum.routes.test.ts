@@ -265,5 +265,30 @@ describe('spectrumRoutes', () => {
         `Wrong network, network non-mainnet is not supported`,
       );
     });
+
+    it('should handle if any error occurs', async () => {
+      const mockQuoteRequest: GetSwapQuoteRequestType = {
+        network: 'mainnet',
+        baseToken: 'ERG',
+        quoteToken: 'SIGUSD',
+        amount: 10,
+        side: 'SELL',
+      };
+      jest.spyOn(spectrum, 'estimateTrade').mockRejectedValue(Object.assign(new Error('Too Many Requests'), { statusCode: 429 }));
+      const response = await fastify.inject({
+        method: 'GET',
+        url: '/quote-swap',
+        query: {
+          network: 'mainnet',
+          baseToken: 'ERG',
+          quoteToken: 'SIGUSD',
+          amount: '10',
+          side: 'SELL',
+         }
+      });
+      expect(response.statusCode).toBe(429);
+      expect(response.json()).toHaveProperty('error');
+      expect(response.json().error).toBe('Too Many Requests');
+    });
   });
 });
