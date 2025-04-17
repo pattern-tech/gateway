@@ -4,7 +4,7 @@ import { PriceRequest } from '../../../src/connectors/connector.requests';
 import { Spectrum } from '../../../src/connectors/spectrum/spectrum';
 import { ExecuteSwapRequestType } from '../../../src/schemas/trading-types/swap-schema';
 
-const ergo = Ergo.getInstance('mainnet');
+let spectrum = Spectrum.getInstance('ergo', 'mainnet');
 
 describe('Spectrum', () => {
   it('Should be defined', () => {
@@ -12,7 +12,6 @@ describe('Spectrum', () => {
   });
 
   describe('getInstance', () => {
-    let spectrum = Spectrum.getInstance('ergo', 'mainnet');
     it('Should be defined', () => {
       expect(spectrum).toBeDefined();
     });
@@ -32,7 +31,7 @@ describe('Spectrum', () => {
   });
 
   describe('getTokenByAddress', () => {
-    const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+    
     it('Should be defined', () => {
       expect(spectrum.getTokenByAddress).toBeDefined();
     });
@@ -56,7 +55,7 @@ describe('Spectrum', () => {
   });
 
   describe('ready', () => {
-    const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+    
     it('Should be defined', () => {
       expect(spectrum.ready).toBeDefined();
     });
@@ -66,7 +65,7 @@ describe('Spectrum', () => {
   });
 
   describe('gasLimitEstimate', () => {
-    const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+    
     it('Should be defined', () => {
       expect(spectrum.gasLimitEstimate).toBeDefined();
     });
@@ -76,7 +75,7 @@ describe('Spectrum', () => {
   });
 
   describe('init', () => {
-    const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+    
     it('Should be defined', () => {
       expect(spectrum.init).toBeDefined();
     });
@@ -97,7 +96,7 @@ describe('Spectrum', () => {
   });
 
   describe('estimateTrade', () => {
-    const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+    
     const request: PriceRequest = {
       chain: 'ergo',
       network: 'mainnet',
@@ -146,12 +145,12 @@ describe('Spectrum', () => {
       slippagePct: 1,
       amount: 10,
     };
-    const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+    
     it('Should be defined', () => {
       expect(spectrum.executeTrade).toBeDefined();
     });
     it('Should call ergo.execute with correct parameters', async () => {
-      // const spectrum = Spectrum.getInstance('ergo', 'mainnet');
+      
       jest
         .spyOn(spectrum['ergo'], 'getAccountFromAddress')
         .mockResolvedValue('account' as any);
