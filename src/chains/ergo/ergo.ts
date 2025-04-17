@@ -58,6 +58,7 @@ import {
   PriceResponse,
   TradeResponse,
 } from '../../connectors/connector.requests';
+import { ExecuteSwapResponseType } from '../../schemas/trading-types/swap-schema';
 
 /**
  * Extended AmmPool class with additional properties and methods
@@ -588,7 +589,7 @@ export class Ergo {
     output_address: string,
     return_address: string,
     priceLimit: string,
-  ): Promise<TradeResponse> {
+  ): Promise<ExecuteSwapResponseType> {
     const config = getErgoConfig(this.network);
     const slippage = config.network.defaultSlippage;
     const { realBaseToken, realQuoteToken, pool } = await this.findBestPool(
@@ -670,7 +671,7 @@ export class Ergo {
 
     await this.submitTransaction(account, tx);
 
-    return this.createTradeResponse(
+    let tradeResponse = this.createTradeResponse(
       realBaseToken,
       realQuoteToken,
       amount,
@@ -682,6 +683,14 @@ export class Ergo {
       timestamp,
       tx,
     );
+    return {
+      signature: tradeResponse.txHash,
+      totalInputSwapped: Number(tradeResponse.amount),
+      totalOutputSwapped: Number(tradeResponse.expectedOut),
+      fee: this.txFee,
+      baseTokenBalanceChange: Number(tradeResponse.amount),
+      quoteTokenBalanceChange: Number(tradeResponse.expectedOut),
+    };
   }
 
   /**

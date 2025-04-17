@@ -3,6 +3,7 @@ import { Ergo } from '../../chains/ergo/ergo';
 import { ErgoAsset } from '../../chains/ergo/interfaces/ergo.interface';
 import { PriceRequest, TradeRequest } from '../connector.requests';
 import { BigNumber } from 'bignumber.js';
+import { ExecuteSwapRequestType } from '../../schemas/trading-types/swap-schema';
 
 export class Spectrum {
   private static _instances: { [name: string]: Spectrum };
@@ -97,39 +98,39 @@ export class Spectrum {
    * @param wallet Wallet
    * @param trade Expected trade
    */
-  async executeTrade(req: TradeRequest) {
+  async executeTrade(req: ExecuteSwapRequestType) {
     const account = await this.ergo.getAccountFromAddress(
-      req.address as unknown as string,
+      req.walletAddress as unknown as string,
     );
     if (req.side === 'SELL')
       return this.ergo.swap(
         account,
-        req.base.replace("_", ""),
-        req.quote.replace("_", ""),
+        req.baseToken.replace("_", ""),
+        req.quoteToken.replace("_", ""),
         BigNumber(req.amount),
-        req.address,
-        req.address,
-        String(req.limitPrice),
+        req.walletAddress,
+        req.walletAddress,
+        String(0),
       );
     else if (req.side === 'BUY')
       return this.ergo.swap(
         account,
-        req.quote.replace("_", ""),
-        req.base.replace("_", ""),
+        req.quoteToken.replace("_", ""),
+        req.baseToken.replace("_", ""),
         BigNumber(req.amount),
-        req.address,
-        req.address,
-        String(req.limitPrice),
+        req.walletAddress,
+        req.walletAddress,
+        String(10000),
       );
     else
       return this.ergo.swap(
         account,
-        req.base.replace("_", ""),
-        req.quote.replace("_", ""),
+        req.baseToken.replace("_", ""),
+        req.quoteToken.replace("_", ""),
         BigNumber(req.amount),
-        req.address,
-        req.address,
-        String(req.limitPrice),
+        req.walletAddress,
+        req.walletAddress,
+        String(0 ? req.side=="SELL" : 10000),
       );
   }
 }
