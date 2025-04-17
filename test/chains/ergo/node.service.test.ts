@@ -4,6 +4,7 @@ import { NodeInfoResponse } from '../../../src/chains/ergo/interfaces/node.inter
 import {
   BlockHeaders,
   ErgoStateContext,
+  Parameters,
   PreHeader,
 } from 'ergo-lib-wasm-nodejs';
 
@@ -21,6 +22,9 @@ jest.mock('ergo-lib-wasm-nodejs', () => ({
   ErgoStateContext: jest
     .fn()
     .mockReturnValue({} as unknown as ErgoStateContext),
+  Parameters: {
+    default_parameters: jest.fn().mockReturnValue({} ),
+  }
 }));
 
 describe('NodeService', () => {

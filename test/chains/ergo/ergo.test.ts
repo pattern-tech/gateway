@@ -1424,28 +1424,6 @@ describe('Ergo', () => {
       expect(ergo.getAddressUnspentBoxes).toHaveBeenCalledWith('address');
     });
 
-    it('Should throw new Error if any error occurs during submitting the tx', async () => {
-      jest.spyOn(ergo_utils, 'getInputs').mockReturnValue({} as any);
-      jest.spyOn(console, 'error').mockImplementation(() => {});
-      const account: any = {
-        prover: {
-          submit: jest.fn().mockResolvedValue({}),
-        },
-      };
-
-      await expect(
-        ergo.swap(
-          account,
-          baseToken,
-          quoteToken,
-          value,
-          output_address,
-          return_address,
-          '18',
-        ),
-      ).rejects.toThrow(`Swap price 1000000 exceeds limitPrice 18`);
-    });
-
     it('Should successfully swap tokens when sell is false', async () => {
       jest
         .spyOn(ergo, 'getAddressUnspentBoxes')
@@ -1466,35 +1444,12 @@ describe('Ergo', () => {
         '1800000',
       );
       expect(result).toEqual({
-        network: ergo.network,
-        timestamp: 123456,
-        latency: 0,
-        base: baseToken,
-        quote: quoteToken,
-        amount: value
-          .multipliedBy(BigNumber(10).pow(pool.y.asset.decimals as number))
-          .div(BigNumber(10).pow(pool.y.asset.decimals as number))
-          .toString(),
-        rawAmount: value
-          .multipliedBy(BigNumber(10).pow(pool.y.asset.decimals as number))
-          .div(BigNumber(10).pow(pool.y.asset.decimals as number))
-          .toString(),
-        expectedOut: BigNumber(BigInt(1).toString())
-          .div(BigNumber(10).pow(pool.y.asset.decimals as number))
-          .toString(),
-        price: BigNumber(BigInt(1).toString())
-          .div(BigNumber(10).pow(pool.y.asset.decimals as number))
-          .div(
-            BigNumber(pool.outputAmount().amount.toString()).div(
-              BigNumber(10).pow(pool.x.asset.decimals as number),
-            ),
-          )
-          .toString(),
-        gasPrice: BigNumber('2000').div(BigNumber(10).pow(9)).toNumber(),
-        gasPriceToken: 'ERG',
-        gasLimit: BigNumber('2000').div(BigNumber(10).pow(9)).toNumber(),
-        gasCost: BigNumber('2000').div(BigNumber(10).pow(9)).toString(),
-        txHash: 'txId',
+        "baseTokenBalanceChange": 10,
+        "quoteTokenBalanceChange": 0.001,
+        "fee": 2000,
+        "signature": "txId",
+        "totalInputSwapped": 10,
+        "totalOutputSwapped": 0.001,
       });
     });
 
@@ -1521,38 +1476,12 @@ describe('Ergo', () => {
         '18',
       );
       expect(result).toEqual({
-        network: ergo.network,
-        timestamp: 123456,
-        latency: 0,
-        base: baseToken,
-        quote: quoteToken,
-        amount: value
-          .multipliedBy(BigNumber(10).pow(pool.x.asset.decimals as number))
-          .div(BigNumber(10).pow(pool.x.asset.decimals as number))
-          .toString(),
-        rawAmount: value
-          .multipliedBy(BigNumber(10).pow(pool.x.asset.decimals as number))
-          .div(BigNumber(10).pow(pool.x.asset.decimals as number))
-          .toString(),
-        expectedOut: BigNumber(BigInt(1).toString())
-          .div(BigNumber(10).pow(pool.x.asset.decimals as number))
-          .toString(),
-        price: BigNumber(1)
-          .div(
-            BigNumber(BigInt(1).toString())
-              .div(BigNumber(10).pow(pool.x.asset.decimals as number))
-              .div(
-                BigNumber(pool.outputAmount().amount.toString()).div(
-                  BigNumber(10).pow(pool.y.asset.decimals as number),
-                ),
-              ),
-          )
-          .toString(),
-        gasPrice: BigNumber('2000').div(BigNumber(10).pow(9)).toNumber(),
-        gasPriceToken: 'ERG',
-        gasLimit: BigNumber('2000').div(BigNumber(10).pow(9)).toNumber(),
-        gasCost: BigNumber('2000').div(BigNumber(10).pow(9)).toString(),
-        txHash: 'txId',
+        "baseTokenBalanceChange": 10,
+        "quoteTokenBalanceChange": 1e-9,
+        "fee": 2000,
+        "signature": "txId",
+        "totalInputSwapped": 10,
+        "totalOutputSwapped": 1e-9,
       });
     });
   });

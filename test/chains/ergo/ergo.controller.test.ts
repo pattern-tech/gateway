@@ -6,13 +6,6 @@ import { BigNumber } from 'bignumber.js';
 import { TransferRequest } from '../../../src/chains/ergo/interfaces/requests.interface';
 import {
   BalanceRequest,
-  BalanceResponse,
-  NonceRequest,
-  NonceResponse,
-  PollRequest,
-  StatusRequest,
-  StatusResponse,
-  TokensRequest,
 } from '../../../src/chains/chain.requests';
 
 ErgoController;
@@ -76,6 +69,7 @@ describe('ErgoController', () => {
         id: '',
         inputs: [],
         dataInputs: [],
+        ergo_tx_full: null,
         outputs: [],
         size: 0,
         network: '',
@@ -122,6 +116,15 @@ describe('ErgoController', () => {
         txData: null,
         txReceipt: null,
         fee: 0,
+        ergo_tx_full:  {
+        dataInputs: [],
+        fee: 0,
+        id: "txId",
+        inclusionHeight: "100",
+        inputs: [],
+        outputs: [],
+        size: 100,
+       },
       });
       expect(ergo.getTx).toHaveBeenCalledWith('txHash');
       expect(ergo.init).toHaveBeenCalled();
@@ -159,20 +162,6 @@ describe('ErgoController', () => {
       expect(ergo.ready).toHaveBeenCalled();
     });
 
-    // it('Should call getAddressUnspentBoxes & getBalance from ergo and return the correct data', async () => {
-    //   const result = await ErgoController.balances(ergo, request);
-    //   expect(ergo.getAddressUnspentBoxes).toHaveBeenCalledWith(
-    //     'usersPublicKey',
-    //   );
-    //   expect(ergo.getBalance).toHaveBeenCalledWith([]);
-    //   expect(result).toMatchObject({
-    //     network: 'mainnet',
-    //     // timestamp ignored because there was a really small difference between create Date.new() in test file and main file
-    //     // timestamp: Date.now(),
-    //     latency: 0,
-    //     balances: { ERG: '0' },
-    //   });
-    // });
 
     it('Should iterate on assets returned from getBalance and return the correct data', async () => {
       jest.spyOn(ergo, 'storedAssetList', 'get').mockReturnValue([
@@ -229,7 +218,7 @@ describe('ErgoController', () => {
 
     it('Should return correct data', async () => {
       const result = await ErgoController.getTokens(ergo, {} as any);
-      expect(result).toEqual({ assets: mockStoredAssetList });
+      expect(result).toEqual({ tokens: mockStoredAssetList });
     });
   });
 
