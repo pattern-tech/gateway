@@ -67,23 +67,21 @@ jest.mock('@patternglobal/ergo-dex-sdk', () => ({
 }));
 jest.mock('@patternglobal/ergo-sdk', () => ({
   Explorer: jest.fn().mockReturnValue({
-    getNetworkContext: jest
-      .fn()
-      .mockReturnValue({
+    getNetworkContext: jest.fn().mockReturnValue({
+      height: 1,
+      epoch: {
         height: 1,
-        epoch: {
-          height: 1,
-          storageFeeFactor: BigInt(1),
-          minValuePerByte: BigInt(1),
-          maxBlockSize: 1,
-          maxBlockCost: BigInt(1),
-          blockVersion: 1,
-          tokenAccessCost: BigInt(1),
-          inputCost: BigInt(1),
-          dataInputCost: BigInt(1),
-          outputCost: BigInt(1),
-        },
-      }),
+        storageFeeFactor: BigInt(1),
+        minValuePerByte: BigInt(1),
+        maxBlockSize: 1,
+        maxBlockCost: BigInt(1),
+        blockVersion: 1,
+        tokenAccessCost: BigInt(1),
+        inputCost: BigInt(1),
+        dataInputCost: BigInt(1),
+        outputCost: BigInt(1),
+      },
+    }),
     uri: 'https://example.com/explorer',
   }),
   AssetAmount: jest.fn(),
@@ -1444,12 +1442,12 @@ describe('Ergo', () => {
         1,
       );
       expect(result).toEqual({
-        "baseTokenBalanceChange": 10,
-        "quoteTokenBalanceChange": 0.001,
-        "fee": 2000,
-        "signature": "txId",
-        "totalInputSwapped": 10,
-        "totalOutputSwapped": 0.001,
+        baseTokenBalanceChange: 10,
+        quoteTokenBalanceChange: 0.001,
+        fee: 2000,
+        signature: 'txId',
+        totalInputSwapped: 10,
+        totalOutputSwapped: 0.001,
       });
     });
 
@@ -1476,12 +1474,12 @@ describe('Ergo', () => {
         1,
       );
       expect(result).toEqual({
-        "baseTokenBalanceChange": 10,
-        "quoteTokenBalanceChange": 1e-9,
-        "fee": 2000,
-        "signature": "txId",
-        "totalInputSwapped": 10,
-        "totalOutputSwapped": 1e-9,
+        baseTokenBalanceChange: 10,
+        quoteTokenBalanceChange: 1e-9,
+        fee: 2000,
+        signature: 'txId',
+        totalInputSwapped: 10,
+        totalOutputSwapped: 1e-9,
       });
     });
   });
@@ -1807,6 +1805,22 @@ describe('Ergo', () => {
     });
   });
 
+  describe('getCurrentBlockTimestamp', () => {
+    it('Should be defined', () => {
+      expect(ergo.getCurrentBlockTimestamp).toBeDefined();
+    });
+    it('Should return the current block timestamp', async () => {
+      jest.spyOn(ergo['_node'], 'getBlockInfo').mockResolvedValue({
+        header: {
+          timestamp: 123456,
+        },
+      });
+      const timestamp = await ergo.getCurrentBlockTimestamp();
+      expect(timestamp).toEqual(123456);
+      expect(ergo['_node'].getBlockInfo).toHaveBeenCalledWith('1');
+    });
+  });
+
   describe('getTx', () => {
     it('Should be defined', () => {
       expect(ergo.getTx).toBeDefined();
@@ -1832,7 +1846,6 @@ describe('Ergo', () => {
 
   describe('getCurrentEpoch', () => {
     it('Should return the current epoch from the Explorer', async () => {
-
       const currentEpoch = await ergo.getCurrentEpoch();
       expect(currentEpoch).toEqual({
         height: 1,
@@ -1850,9 +1863,9 @@ describe('Ergo', () => {
     });
 
     it('Should handle errors gracefully when fetching the current epoch', async () => {
-        jest.spyOn(ergo['_explorer'], 'getNetworkContext').mockRejectedValue(
-          new Error('Network error'),
-        );
+      jest
+        .spyOn(ergo['_explorer'], 'getNetworkContext')
+        .mockRejectedValue(new Error('Network error'));
 
       await expect(ergo.getCurrentEpoch()).rejects.toThrow('Network error');
       expect(ergo['_explorer'].getNetworkContext).toHaveBeenCalledTimes(1);
